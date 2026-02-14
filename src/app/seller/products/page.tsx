@@ -1,0 +1,134 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import DashboardLayout from '@/components/DashboardLayout';
+import { supabase, Product } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { Plus, Edit, Trash2, ExternalLink, Loader2, Info, Package, MoreHorizontal, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
+
+export default function MyProducts() {
+    const { user } = useAuth();
+    const { t } = useLanguage();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            if (!user) return;
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('seller_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (!error && data) {
+                setProducts(data);
+            }
+            setLoading(false);
+        };
+
+        fetchProducts();
+    }, [user]);
+
+    const toggleStatus = async (productId: string, currentStatus: boolean) => {
+        const { error } = await supabase
+            .from('products')
+            .update({ is_active: !currentStatus })
+            .eq('id', productId);
+
+        if (!error) {
+            setProducts(products.map(p => p.id === productId ? { ...p, is_active: !currentStatus } : p));
+        }
+    };
+
+    return (
+        <DashboardLayout role="seller">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                <div>
+                    <h2 style={{ fontSize: '1.875rem', color: 'var(--secondary)' }}>{t('products')}</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Manage your regional node inventory and active lots.</p>
+                </div>
+                <Link href="/seller/products/new" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 1.5rem' }}>
+                    <Plus size={18} /> {t('inventory')}
+                </Link>
+            </div>
+
+            {loading ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                    {[1, 2, 3].map(i => <div key={i} className="shimmer" style={{ height: '400px', borderRadius: '16px' }}></div>)}
+                </div>
+            ) : products.length === 0 ? (
+                <div className="card-white" style={{ textAlign: 'center', padding: '6rem' }}>
+                    <div style={{ width: '64px', height: '64px', background: 'var(--bg-main)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                        <Package size={32} color="var(--text-soft)" />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No active storage lots</h3>
+                    <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Initialize your first warehouse batch to start trading.</p>
+                    <Link href="/seller/products/new" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 2rem' }}>
+                        Create Listing Node
+                    </Link>
+                </div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                    {products.map((product) => (
+                        <div key={product.id} className="card-white" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ position: 'relative', height: '200px' }}>
+                                <img
+                                    src={product.image_url || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800'}
+                                    alt={product.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                                <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                                    <span className={`badge-clean ${product.is_active ? 'badge-success' : 'badge-error'}`} style={{ background: 'white', border: '1px solid var(--border)' }}>
+                                        {product.is_active ? 'ACTIVE NODE' : 'OFFLINE'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                    <div>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>{product.category}</span>
+                                        <h3 style={{ fontSize: '1.125rem', marginTop: '0.25rem' }}>{product.name}</h3>
+                                    </div>
+                                    <button style={{ background: 'none', border: 'none', color: 'var(--text-soft)', cursor: 'pointer' }}>
+                                        <MoreHorizontal size={20} />
+                                    </button>
+                                </div>
+
+                                <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-soft)' }}>Network Rate</span>
+                                        <span style={{ fontWeight: 800, color: 'var(--secondary)' }}>{t('currency_symbol')}{product.price_per_unit} / {t('unit_q')}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-soft)' }}>Lot Capacity</span>
+                                        <span style={{ fontWeight: 800, color: 'var(--secondary)' }}>{product.quantity_available} {t('unit_q')}</span>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: 'auto', display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => toggleStatus(product.id, product.is_active)}
+                                        className="btn-modern btn-secondary-modern"
+                                        style={{ flex: 1, fontSize: '0.8rem', height: '40px' }}
+                                    >
+                                        {product.is_active ? 'Offline' : 'Go Live'}
+                                    </button>
+                                    <button className="btn-modern btn-secondary-modern" style={{ padding: '0', width: '40px', height: '40px' }}>
+                                        <Edit size={16} />
+                                    </button>
+                                    <button className="btn-modern btn-secondary-modern" style={{ padding: '0', width: '40px', height: '40px', color: 'var(--error)' }}>
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </DashboardLayout>
+    );
+}

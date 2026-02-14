@@ -1,0 +1,211 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import DashboardLayout from '@/components/DashboardLayout';
+import { supabase, Transaction } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import {
+    Wallet,
+    TrendingUp,
+    ArrowUpRight,
+    Clock,
+    CheckCircle2,
+    Calendar,
+    ChevronRight,
+    ArrowDownRight,
+    Search,
+    Filter,
+    Activity,
+    Database,
+    Shield
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { useLanguage } from '@/context/LanguageContext';
+import Link from 'next/link';
+
+export default function SellerDashboard() {
+    const { user } = useAuth();
+    const { t } = useLanguage();
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchData = async () => {
+        if (!user) return;
+        const { data, error } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('seller_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (!error && data) setTransactions(data);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchData();
+        const channel = supabase
+            .channel('seller_wallet')
+            .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'transactions', filter: `seller_id=eq.${user?.id}` }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [user]);
+
+    const stats = {
+        withdrawable: transactions.filter(t => t.status === 'cleared').reduce((acc, curr) => acc + curr.amount, 0),
+        escrow: transactions.filter(t => t.status === 'held').reduce((acc, curr) => acc + curr.amount, 0),
+        monthly: transactions.filter(t => new Date(t.created_at).getMonth() === new Date().getMonth()).reduce((acc, curr) => acc + curr.amount, 0)
+    };
+
+    return (
+        <DashboardLayout role="seller">
+            <div style={{ marginBottom: '2.5rem' }}>
+                <h1 style={{ fontSize: '2rem', color: 'var(--secondary)', letterSpacing: '-0.03em' }}>{t('welcome')}</h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>Inventory Settlement Node: Operational Hub Status OK.</p>
+            </div>
+
+            {/* Wallet Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '2.5rem' }}>
+                <div className="card-white" style={{ padding: '1.5rem', borderLeft: '4px solid var(--success)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{t('stats.available_balance')}</span>
+                        <Wallet size={18} color="var(--success)" />
+                    </div>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: 900, color: 'var(--secondary)', marginBottom: '0.25rem' }}>{t('currency_symbol')}{stats.withdrawable.toFixed(2)}</h2>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>Liquidized Capital</p>
+                </div>
+
+                <div className="card-white" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{t('stats.pending_payments')}</span>
+                        <Clock size={18} color="var(--warning)" />
+                    </div>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: 900, color: 'var(--secondary)', marginBottom: '0.25rem' }}>{t('currency_symbol')}{stats.escrow.toFixed(2)}</h2>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-soft)' }}>Held in Institutional Escrow</p>
+                </div>
+
+                <div className="card-white" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{t('stats.monthly_yield')}</span>
+                        <TrendingUp size={18} color="var(--primary)" />
+                    </div>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: 900, color: 'var(--secondary)', marginBottom: '0.25rem' }}>{t('currency_symbol')}{stats.monthly.toFixed(2)}</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 800, color: 'var(--success)' }}>
+                        <ArrowUpRight size={14} /> +18.4%
+                    </div>
+                </div>
+
+                <div className="card-white" style={{ padding: '1.5rem', background: 'var(--primary)', color: 'white' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Silo Efficiency</span>
+                        <Database size={18} color="rgba(255,255,255,0.7)" />
+                    </div>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: 900, color: 'white', marginBottom: '0.25rem' }}>92.4%</h2>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>Optimization Active</p>
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+                {/* Transaction History */}
+                <div className="card-white" style={{ padding: '2.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                        <div>
+                            <h3 style={{ fontSize: '1.25rem' }}>Settlement Ledger</h3>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Warehouse inventory movement analytics</p>
+                        </div>
+                        <Link href="/seller/products" className="btn-modern btn-secondary-modern" style={{ padding: '0.5rem 1rem', height: 'auto', fontSize: '0.8rem' }}>
+                            View Inventory <ChevronRight size={14} />
+                        </Link>
+                    </div>
+
+                    {loading ? (
+                        <div className="shimmer" style={{ height: '300px', borderRadius: '12px' }}></div>
+                    ) : transactions.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '5rem', background: 'var(--bg-main)', borderRadius: '16px', border: '1px dashed var(--border)' }}>
+                            <Activity size={32} color="#94a3b8" style={{ marginBottom: '1rem' }} />
+                            <p style={{ color: 'var(--text-soft)', fontSize: '0.9rem', fontWeight: 700 }}>No financial settlements recorded yet.</p>
+                        </div>
+                    ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid var(--border-soft)' }}>
+                                        <th style={{ textAlign: 'left', padding: '1rem 0', color: 'var(--text-soft)', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Date Protocol</th>
+                                        <th style={{ textAlign: 'left', padding: '1rem 0', color: 'var(--text-soft)', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Batch SKU</th>
+                                        <th style={{ textAlign: 'left', padding: '1rem 0', color: 'var(--text-soft)', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Valuation</th>
+                                        <th style={{ textAlign: 'left', padding: '1rem 0', color: 'var(--text-soft)', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Auth Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {transactions.slice(0, 5).map((txn) => (
+                                        <tr key={txn.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
+                                            <td style={{ padding: '1.25rem 0', fontSize: '0.925rem', fontWeight: 700 }}>{format(new Date(txn.created_at), 'MMM dd, yyyy')}</td>
+                                            <td style={{ padding: '1.25rem 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>LOT-{txn.order_id.slice(0, 6).toUpperCase()}</td>
+                                            <td style={{ padding: '1.25rem 0', fontSize: '0.95rem', fontWeight: 900 }}>{t('currency_symbol')}{txn.amount.toFixed(2)}</td>
+                                            <td style={{ padding: '1.25rem 0' }}>
+                                                <span className={`badge-clean ${txn.status === 'cleared' ? 'badge-success' : 'badge-pending'}`}>
+                                                    {txn.status === 'cleared' ? 'Verified' : 'Escrow Hub'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                                <button className="btn-modern btn-secondary-modern" style={{ width: '100%', border: 'none', background: 'var(--bg-main)', fontSize: '0.85rem' }}>
+                                    Download Full Node Ledger (PDF)
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Performance Hub */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="card-white" style={{ padding: '2.5rem', background: 'var(--secondary)', color: 'white' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <h3 style={{ color: 'white', fontSize: '1.25rem' }}>Hub Analytics</h3>
+                            <Link href="/market-intelligence" style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.8rem', textDecoration: 'none' }}>Open Hub <ArrowUpRight size={14} /></Link>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+                                    <span style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>NODE SYNC STATUS</span>
+                                    <span style={{ color: 'var(--success)' }}>HEALTHY</span>
+                                </div>
+                                <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '100px', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: '94%', background: 'var(--success)' }}></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+                                    <span style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>SILO UTILIZATION</span>
+                                    <span style={{ color: 'var(--warning)' }}>78.4%</span>
+                                </div>
+                                <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '100px', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: '78%', background: 'var(--warning)' }}></div>
+                                </div>
+                            </div>
+                        </div>
+                        <button className="btn-modern" style={{ width: '100%', marginTop: '3rem', background: 'white', color: 'var(--secondary)', height: '52px', fontWeight: 800 }}>
+                            Technical Audit v4.2
+                        </button>
+                    </div>
+
+                    <div className="card-white" style={{ padding: '2.5rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Withdrawal Hub</h3>
+                        <div style={{ padding: '1.75rem', background: 'var(--bg-main)', borderRadius: '16px', border: '1.5px solid var(--border-soft)', textAlign: 'center', marginBottom: '1.5rem' }}>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-soft)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '1px' }}>Capacity for Payout</p>
+                            <h2 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{t('currency_symbol')}{stats.withdrawable.toFixed(2)}</h2>
+                        </div>
+                        <button className="btn-modern btn-primary-modern" style={{ width: '100%', height: '52px' }} disabled={stats.withdrawable === 0}>
+                            Initiate Payout Protocol
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </DashboardLayout>
+    );
+}
