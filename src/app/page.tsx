@@ -50,8 +50,8 @@ export default function LandingPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '3rem', alignItems: 'center' }}>
-          <Link href="#solutions" style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'none' }}>Solutions</Link>
-          <Link href="#network" style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'none' }}>Network</Link>
+          <Link href="#solutions" style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'none' }}>Features</Link>
+          <Link href="#network" style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'none' }}>Coverage</Link>
           <div style={{ width: '1px', height: '24px', background: 'var(--border)' }}></div>
           <Link href="/login" style={{ fontWeight: 800, color: 'var(--secondary)', fontSize: '0.9rem', textDecoration: 'none' }}>{t('cta_login')}</Link>
           <Link href="/signup" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 1.75rem', borderRadius: '12px' }}>
@@ -77,24 +77,24 @@ export default function LandingPage() {
         >
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', padding: '0.625rem 1.25rem', background: 'white', border: '1px solid var(--border)', borderRadius: '100px', marginBottom: '3rem', boxShadow: 'var(--shadow-sm)' }}>
             <Activity size={16} color="var(--primary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Node Protocol 0x4F Active</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Trusted by 14,000+ Farmers</span>
             <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--success)' }}></div>
           </div>
 
           <h1 style={{ fontSize: '5.5rem', lineHeight: 1, maxWidth: '1000px', margin: '0 auto 2.5rem', letterSpacing: '-0.05em', color: 'var(--secondary)', fontWeight: 900 }}>
-            <span style={{ color: 'var(--primary)' }}>Digital Storage</span> <br /> Institutional Node Hub.
+            <span style={{ color: 'var(--primary)' }}>Buy & Sell</span> <br /> Crops Online.
           </h1>
           <p style={{ fontSize: '1.4rem', color: 'var(--text-muted)', maxWidth: '750px', margin: '0 auto 4rem', lineHeight: 1.6, fontWeight: 500 }}>
-            Verifiable storage receipts for India's bulk crop supply chain. <br />
-            Secured by decentralized regional warehouse clusters.
+            A trusted platform for Indian farmers to sell crops <br />
+            directly to buyers — fair prices, no middlemen.
           </p>
 
           <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'center' }}>
             <Link href="/signup" className="btn-modern btn-primary-modern" style={{ height: '64px', padding: '0 3rem', fontSize: '1.1rem', borderRadius: '16px' }}>
-              Initialize Onboarding <ArrowRight size={22} />
+              Get Started Free <ArrowRight size={22} />
             </Link>
             <Link href="/login" className="btn-modern btn-secondary-modern" style={{ height: '64px', padding: '0 3rem', fontSize: '1.1rem', borderRadius: '16px' }}>
-              Network Specs
+              Sign In
             </Link>
           </div>
         </motion.div>
@@ -102,9 +102,9 @@ export default function LandingPage() {
         {/* Floating Stats */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '100px' }}>
           {[
-            { label: 'Storage AUM', val: '₹942 Cr', icon: Database },
-            { label: 'Verified Nodes', val: '14,200', icon: ShieldCheck },
-            { label: 'Market Yield', val: '+12.4%', icon: TrendingUp }
+            { label: 'Total Sales', val: '₹942 Cr', icon: Database },
+            { label: 'Verified Farmers', val: '14,200', icon: ShieldCheck },
+            { label: 'Better Prices', val: '+12.4%', icon: TrendingUp }
           ].map((s, i) => (
             <motion.div
               key={i}
@@ -131,28 +131,28 @@ export default function LandingPage() {
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', opacity: 0.05, backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }}></div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5rem', alignItems: 'center', position: 'relative', zIndex: 10 }}>
           <div>
-            <h2 style={{ fontSize: '3.5rem', color: 'white', marginBottom: '2rem', lineHeight: 1.1 }}>Regional Node <br /> Clusters in <span style={{ color: 'var(--primary)' }}>28 States.</span></h2>
+            <h2 style={{ fontSize: '3.5rem', color: 'white', marginBottom: '2rem', lineHeight: 1.1 }}>Available Across <br /><span style={{ color: 'var(--primary)' }}>All 28 States.</span></h2>
             <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.6)', marginBottom: '3rem', lineHeight: 1.7 }}>
-              Our network operates at the edge of physical storage. Every grain silo and warehouse terminal is connected via the Node-Sync v4 protocol for 100% telemetry accuracy.
+              Whether you're in Punjab, Kerala, or anywhere in between — CropStack connects you to buyers and sellers across India. Available in 6+ languages.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
               <div>
                 <Award size={32} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-                <h4 style={{ color: 'white', fontSize: '1.1rem', marginBottom: '0.5rem' }}>ISO Verified</h4>
-                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)' }}>Certified storage logistics and data governance.</p>
+                <h4 style={{ color: 'white', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Quality Verified</h4>
+                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)' }}>Every seller and crop listing is checked for accuracy.</p>
               </div>
               <div>
                 <Zap size={32} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-                <h4 style={{ color: 'white', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Instant Settlement</h4>
-                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)' }}>Funds released via encrypted escrow upon audit.</p>
+                <h4 style={{ color: 'white', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Fast Payments</h4>
+                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)' }}>Get paid directly to your bank account within 24 hours.</p>
               </div>
             </div>
           </div>
           <div className="card-white" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ textAlign: 'center' }}>
               <Globe size={160} color="rgba(255,255,255,0.05)" />
-              <p style={{ color: 'var(--primary)', fontWeight: 800, marginTop: '2rem', fontSize: '1.25rem', letterSpacing: '2px' }}>PAN-INDIA GRID MAP</p>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>Telemetric Node Connectivity: ACTIVE</p>
+              <p style={{ color: 'var(--primary)', fontWeight: 800, marginTop: '2rem', fontSize: '1.25rem', letterSpacing: '2px' }}>ALL-INDIA COVERAGE</p>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>Available in 6+ Indian languages</p>
             </div>
           </div>
         </div>
@@ -161,15 +161,15 @@ export default function LandingPage() {
       {/* Features Grid */}
       <section id="solutions" style={{ padding: '120px 8%' }}>
         <div style={{ textAlign: 'center', marginBottom: '6rem' }}>
-          <h2 style={{ fontSize: '3rem', color: 'var(--secondary)', marginBottom: '1.25rem' }}>Enterprise Precision.</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '600px', marginInline: 'auto' }}>Engineered for grains, seeds, and pulses at institutional scale.</p>
+          <h2 style={{ fontSize: '3rem', color: 'var(--secondary)', marginBottom: '1.25rem' }}>Why Farmers Choose Us.</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '600px', marginInline: 'auto' }}>Simple tools built for selling grains, seeds, and pulses online.</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem' }}>
           {[
-            { title: 'Terminal Scanning', desc: 'Secure the distribution chain with PIN-based physical lot clearance at regional nodes.', icon: Lock },
-            { title: 'Escrow Sovereignty', desc: 'Institutional capital protection with funds held in neutral escrow until verified audit.', icon: ShieldCheck },
-            { title: 'Global Sync Hub', desc: 'Manage localized inventory across multiple states with a unified institutional dashboard.', icon: Database },
+            { title: 'Secure Transactions', desc: 'Every payment is protected. Your money is safe until the order is confirmed and delivered.', icon: Lock },
+            { title: 'Fair Pricing', desc: 'See real-time market prices and get the best deal — no hidden fees or middlemen.', icon: ShieldCheck },
+            { title: 'Easy to Use', desc: 'Manage your crops, orders, and payments from one simple dashboard — available in your language.', icon: Database },
           ].map((feat, i) => (
             <div key={i} className="card-white" style={{ padding: '3.5rem' }}>
               <div style={{ width: '56px', height: '56px', background: 'var(--primary-soft)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.15)' }}>
@@ -189,13 +189,13 @@ export default function LandingPage() {
             <Warehouse size={400} />
           </div>
 
-          <h2 style={{ fontSize: '4rem', color: 'var(--secondary)', marginBottom: '2rem', letterSpacing: '-0.04em', fontWeight: 900 }}>Initialize Your <br /> Institutional Node.</h2>
+          <h2 style={{ fontSize: '4rem', color: 'var(--secondary)', marginBottom: '2rem', letterSpacing: '-0.04em', fontWeight: 900 }}>Start Selling <br /> Your Crops Today.</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.3rem', marginBottom: '4rem', maxWidth: '600px', marginInline: 'auto', fontWeight: 500 }}>
-            Join the verified network of storage owners and buyers.
+            Join thousands of farmers and buyers across India.
           </p>
           <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'center' }}>
             <Link href="/signup" className="btn-modern btn-primary-modern" style={{ height: '72px', padding: '0 4rem', fontSize: '1.25rem', borderRadius: '20px' }}>
-              Join the Network <ArrowRight size={24} />
+              Create Free Account <ArrowRight size={24} />
             </Link>
           </div>
         </div>
@@ -209,27 +209,27 @@ export default function LandingPage() {
               <Warehouse color="var(--primary)" size={28} />
               <span style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.05em' }}>{t('app_name')}</span>
             </div>
-            <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', lineHeight: 1.6 }}>&copy; 2026 CropStack Global Silo Protocols.<br />Institutional Agri-Fintech Hub.<br />Node Identifier: CLUSTER-WH-0B</p>
+            <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', lineHeight: 1.6 }}>&copy; 2026 CropStack.<br />India's trusted crop trading platform.<br />Made for farmers, by farmers.</p>
           </div>
           <div style={{ display: 'flex', gap: '6rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <p style={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--secondary)', letterSpacing: '0.1em' }}>Infrastructure</p>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Regional Nodes</Link>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Silo Ticker</Link>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Asset Vault</Link>
+              <p style={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--secondary)', letterSpacing: '0.1em' }}>Platform</p>
+              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Buy Crops</Link>
+              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Sell Crops</Link>
+              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Market Prices</Link>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <p style={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--secondary)', letterSpacing: '0.1em' }}>Governance</p>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Protocol V4</Link>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Escrow Terms</Link>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>API Docs</Link>
+              <p style={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--secondary)', letterSpacing: '0.1em' }}>Support</p>
+              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Help Center</Link>
+              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Terms of Use</Link>
+              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Privacy Policy</Link>
             </div>
           </div>
         </div>
         <div style={{ padding: '2rem 0', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Global Cluster Connectivity: Optimal Status</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Available across all of India • 6+ Languages Supported</p>
         </div>
-      </footer>
-    </div>
+      </footer >
+    </div >
   );
 }

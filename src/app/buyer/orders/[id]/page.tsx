@@ -122,7 +122,7 @@ export default function OrderReceipt() {
                         {/* Order Calculation */}
                         <div>
                             <div style={{ background: 'var(--secondary)', padding: '2rem', borderRadius: '16px', color: 'white' }}>
-                                <h3 style={{ color: 'white', fontSize: '0.9rem', marginBottom: '1.5rem', pb: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Allocation Value</h3>
+                                <h3 style={{ color: 'white', fontSize: '0.9rem', marginBottom: '1.5rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Allocation Value</h3>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

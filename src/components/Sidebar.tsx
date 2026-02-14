@@ -45,7 +45,7 @@ export default function Sidebar({ role }: SidebarProps) {
 
     const organizerLinks = [
         { name: t('dashboard'), href: '/organizer/dashboard', icon: LayoutDashboard },
-        { name: t('warehouse_queue'), href: '/organizer/dashboard', icon: ShieldCheck },
+        { name: t('warehouse_queue'), href: '/organizer/queue', icon: ShieldCheck },
         { name: t('summary'), href: '/organizer/inventory', icon: Database },
     ];
 
@@ -85,11 +85,13 @@ export default function Sidebar({ role }: SidebarProps) {
             {/* Nav */}
             <nav style={{ flex: 1, padding: '2rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0.75rem 1.25rem' }}>
-                    {t('roles.' + role)} Control
+                    {t('roles.' + role)} Menu
                 </p>
                 {links.map((link, index) => {
                     const Icon = link.icon;
-                    const isActive = pathname === link.href;
+                    const isActive = link.href.endsWith('/dashboard')
+                        ? pathname === link.href
+                        : pathname.startsWith(link.href);
                     return (
                         <Link
                             key={`${link.href}-${index}`}
@@ -122,7 +124,7 @@ export default function Sidebar({ role }: SidebarProps) {
                 <div style={{ marginBottom: '2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                         <Globe size={14} color="var(--text-soft)" />
-                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Node Language</span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Language</span>
                     </div>
                     <select
                         value={language}

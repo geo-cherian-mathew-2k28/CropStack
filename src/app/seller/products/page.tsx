@@ -48,7 +48,7 @@ export default function MyProducts() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
                 <div>
                     <h2 style={{ fontSize: '1.875rem', color: 'var(--secondary)' }}>{t('products')}</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Manage your regional node inventory and active lots.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>View and manage all your crop listings.</p>
                 </div>
                 <Link href="/seller/products/new" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 1.5rem' }}>
                     <Plus size={18} /> {t('inventory')}
@@ -64,10 +64,10 @@ export default function MyProducts() {
                     <div style={{ width: '64px', height: '64px', background: 'var(--bg-main)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
                         <Package size={32} color="var(--text-soft)" />
                     </div>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No active storage lots</h3>
-                    <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Initialize your first warehouse batch to start trading.</p>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No crops listed yet</h3>
+                    <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Add your first crop to start selling.</p>
                     <Link href="/seller/products/new" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 2rem' }}>
-                        Create Listing Node
+                        Add Crop
                     </Link>
                 </div>
             ) : (
@@ -82,7 +82,7 @@ export default function MyProducts() {
                                 />
                                 <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
                                     <span className={`badge-clean ${product.is_active ? 'badge-success' : 'badge-error'}`} style={{ background: 'white', border: '1px solid var(--border)' }}>
-                                        {product.is_active ? 'ACTIVE NODE' : 'OFFLINE'}
+                                        {product.is_active ? 'LISTED' : 'HIDDEN'}
                                     </span>
                                 </div>
                             </div>
@@ -100,11 +100,11 @@ export default function MyProducts() {
 
                                 <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: '12px', marginBottom: '1.5rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-soft)' }}>Network Rate</span>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-soft)' }}>Price</span>
                                         <span style={{ fontWeight: 800, color: 'var(--secondary)' }}>{t('currency_symbol')}{product.price_per_unit} / {t('unit_q')}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-soft)' }}>Lot Capacity</span>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-soft)' }}>Stock</span>
                                         <span style={{ fontWeight: 800, color: 'var(--secondary)' }}>{product.quantity_available} {t('unit_q')}</span>
                                     </div>
                                 </div>
@@ -115,7 +115,7 @@ export default function MyProducts() {
                                         className="btn-modern btn-secondary-modern"
                                         style={{ flex: 1, fontSize: '0.8rem', height: '40px' }}
                                     >
-                                        {product.is_active ? 'Offline' : 'Go Live'}
+                                        {product.is_active ? 'Hide' : 'Show'}
                                     </button>
                                     <button className="btn-modern btn-secondary-modern" style={{ padding: '0', width: '40px', height: '40px' }}>
                                         <Edit size={16} />

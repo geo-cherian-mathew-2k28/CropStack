@@ -15,8 +15,8 @@ const instrument = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "CropStack Pro | Institutional Grain Protocols",
-  description: "Enterprise-grade crop storage and institutional trading network.",
+  title: "CropStack | Buy & Sell Crops Online",
+  description: "A trusted platform for Indian farmers to buy and sell crops directly — fair prices, no middlemen.",
 };
 
 export default function RootLayout({

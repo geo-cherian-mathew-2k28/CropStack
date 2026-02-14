@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CropStack — Sensor Control Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --bg-card: rgba(15, 23, 42, 0.7);
+            --bg-card-hover: rgba(20, 30, 52, 0.85);
+            --bg-surface: #111827;
+            --bg-input: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --text-soft: #64748b;
+            --border: rgba(148, 163, 184, 0.12);
+            --border-focus: rgba(16, 185, 129, 0.5);
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.15);
+            --primary-hover: #059669;
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.15);
+            --error: #ef4444;
+            --error-glow: rgba(239, 68, 68, 0.15);
+            --cyan: #06b6d4;
+            --cyan-glow: rgba(6, 182, 212, 0.15);
+            --purple: #8b5cf6;
+            --purple-glow: rgba(139, 92, 246, 0.15);
+            --gradient-primary: linear-gradient(135deg, #10b981, #059669);
+            --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+            --shadow-glow: 0 0 30px rgba(16, 185, 129, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Background Grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.06) 1px, transparent 0);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Ambient Glow */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -200px; right: -200px;
+            width: 800px; height: 800px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app { position: relative; z-index: 1; }
+
+        /* Header */
+        .header {
+            padding: 1.5rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            background: rgba(10, 14, 23, 0.8);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+        }
+
+        .header-logo {
+            width: 42px; height: 42px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        .header-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
+
+        .header-title span { color: var(--primary); }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--primary-glow);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        }
+
+        .last-updated {
+            font-size: 0.75rem;
+            color: var(--text-soft);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem 2.5rem 4rem;
+        }
+
+        /* Section Title */
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .section-title h2 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .section-title .badge {
+            padding: 0.25rem 0.625rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-live { background: var(--primary-glow); color: var(--primary); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 2rem;
+            background: var(--bg-surface);
+            padding: 0.25rem;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--text-soft);
+            transition: all 0.25s ease;
+        }
+
+        .tab:hover { color: var(--text-main); }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-card);
+        }
+
+        .card:hover {
+            border-color: rgba(16, 185, 129, 0.2);
+            box-shadow: var(--shadow-glow);
+        }
+
+        /* Sensor Grid */
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .sensor-card {
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sensor-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .sensor-card:nth-child(1)::before { background: var(--gradient-primary); }
+        .sensor-card:nth-child(2)::before { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+        .sensor-card:nth-child(3)::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .sensor-card:nth-child(4)::before { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+        .sensor-card:nth-child(5)::before { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .sensor-card:nth-child(6)::before { background: var(--gradient-primary); }
+        .sensor-card:nth-child(7)::before { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+        .sensor-card:nth-child(8)::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .sensor-card:nth-child(9)::before { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+        .sensor-card:nth-child(10)::before { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+        .sensor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .sensor-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .sensor-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-soft);
+        }
+
+        .sensor-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.75rem;
+        }
+
+        .sensor-value span {
+            font-size: 0.85rem;
+            color: var(--text-soft);
+            font-weight: 600;
+        }
+
+        .sensor-input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .sensor-input {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 0.5rem 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .sensor-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .sensor-btn {
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 0.5rem 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .sensor-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .sensor-btn:active { transform: scale(0.96); }
+
+        /* Market Grid */
+        .market-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .market-table { width: 100%; border-collapse: collapse; }
+
+        .market-table th {
+            text-align: left;
+            padding: 1rem 1.25rem;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-soft);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .market-table td {
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+        }
+
+        .market-table tr:hover td {
+            background: rgba(16, 185, 129, 0.03);
+        }
+
+        .market-name { font-weight: 700; }
+        
+        .market-price {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+        }
+
+        .trend-up { color: var(--primary); }
+        .trend-down { color: var(--error); }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-section {
+            padding: 2rem;
+        }
+
+        .stat-section h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-row:last-child { border-bottom: none; }
+
+        .stat-key {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .stat-value-edit {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-input {
+            width: 120px;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 0.375rem 0.625rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            outline: none;
+            text-align: right;
+            transition: all 0.2s ease;
+        }
+
+        .stat-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .save-btn {
+            padding: 0.375rem 0.625rem;
+            background: var(--primary-glow);
+            color: var(--primary);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .save-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Orders Table */
+        .orders-section { padding: 2rem; margin-bottom: 2rem; }
+        
+        .orders-section h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+        }
+
+        .orders-table { width: 100%; border-collapse: collapse; }
+
+        .orders-table th {
+            text-align: left;
+            padding: 0.875rem 1rem;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-soft);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .orders-table td {
+            padding: 1rem;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+            color: var(--text-muted);
+        }
+
+        .pin-badge {
+            background: var(--primary-glow);
+            color: var(--primary);
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .status-pill {
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-reserved { background: var(--warning-glow); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .status-completed { background: var(--primary-glow); color: var(--primary); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-held { background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.2); }
+        .status-cleared { background: var(--primary-glow); color: var(--primary); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 14px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-icon {
+            width: 32px; height: 32px;
+            background: var(--primary-glow);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .toast-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Tab Content */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sensor-grid { grid-template-columns: repeat(3, 1fr); }
+            .market-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .sensor-grid { grid-template-columns: repeat(2, 1fr); }
+            .container { padding: 1.5rem; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* Bulk Action */
+        .bulk-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .action-btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .action-btn.primary {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .action-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-brand">
+            <div class="header-logo">🌾</div>
+            <div>
+                <div class="header-title">Crop<span>Stack</span></div>
+                <div style="font-size: 0.65rem; color: var(--text-soft); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Sensor Control Hub</div>
+            </div>
+        </div>
+        <div class="header-status">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                ALL SYSTEMS ONLINE
+            </div>
+            <div class="last-updated" id="lastUpdated">--:--:--</div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="sensors">🔬 Sensors</button>
+            <button class="tab" data-tab="market">📊 Market Data</button>
+            <button class="tab" data-tab="dashboards">📈 Dashboard Stats</button>
+            <button class="tab" data-tab="orders">📦 Orders & Txns</button>
+        </div>
+
+        <!-- SENSORS TAB -->
+        <div class="tab-content active" id="tab-sensors">
+            <div class="section-title">
+                <h2>Environmental Sensors</h2>
+                <span class="badge badge-live">● LIVE</span>
+            </div>
+            
+            <div class="bulk-actions">
+                <button class="action-btn primary" onclick="saveAllSensors()">💾 Save All Changes</button>
+                <button class="action-btn" onclick="randomizeSensors()">🎲 Randomize Values</button>
+                <button class="action-btn" onclick="resetSensors()">↩️ Reset Defaults</button>
+            </div>
+
+            <div class="sensor-grid" id="sensorGrid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- MARKET TAB -->
+        <div class="tab-content" id="tab-market">
+            <div class="section-title">
+                <h2>Commodity Market Data</h2>
+                <span class="badge badge-live">● LIVE</span>
+            </div>
+
+            <div class="market-grid">
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="font-size: 1rem; font-weight: 800;">Active Commodities</h3>
+                        <button class="action-btn primary" onclick="saveMarketData()" style="font-size: 0.75rem; padding: 0.5rem 1rem;">Save Changes</button>
+                    </div>
+                    <table class="market-table" id="marketTable">
+                        <thead>
+                            <tr>
+                                <th>Commodity</th>
+                                <th>Price (₹/q)</th>
+                                <th>Change %</th>
+                                <th>Volume</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="marketBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="card" id="networkStatsCard" style="padding: 2rem;">
+                        <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Network Stats</h3>
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="card" id="clusterHealthCard" style="padding: 2rem;">
+                        <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Cluster Health</h3>
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD STATS TAB -->
+        <div class="tab-content" id="tab-dashboards">
+            <div class="section-title">
+                <h2>Dashboard Controls</h2>
+                <span class="badge badge-live">● LIVE</span>
+            </div>
+
+            <div class="stats-grid">
+                <div class="card stat-section" id="buyerStatsCard">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 0;">🛒 Buyer Dashboard</h3>
+                        <button class="save-btn" onclick="saveBuyerStats()">Save</button>
+                    </div>
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="card stat-section" id="sellerStatsCard">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 0;">🏪 Seller Dashboard</h3>
+                        <button class="save-btn" onclick="saveSellerStats()">Save</button>
+                    </div>
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="card stat-section" id="organizerStatsCard">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 0;">🏗️ Organizer Dashboard</h3>
+                        <button class="save-btn" onclick="saveOrganizerStats()">Save</button>
+                    </div>
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ORDERS TAB -->
+        <div class="tab-content" id="tab-orders">
+            <div class="section-title">
+                <h2>Orders & Transactions</h2>
+                <span class="badge badge-live">● LIVE</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem;">
+                <div class="card orders-section">
+                    <h3>Active Orders</h3>
+                    <table class="orders-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>PIN</th>
+                                <th>Buyer</th>
+                                <th>Product</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card orders-section">
+                    <h3>Transaction Ledger</h3>
+                    <table class="orders-table" id="txnTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="txnBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+    <div class="toast-icon">✅</div>
+    <div class="toast-text" id="toastText">Updated successfully</div>
+</div>
+
+<script>
+const API = '';
+let sensorData = {};
+let marketData = [];
+let networkStats = {};
+let clusterHealth = [];
+let buyerStats = {};
+let sellerStats = {};
+let organizerStats = {};
+let ordersData = [];
+let transactionsData = [];
+
+const SENSOR_META = {
+    temperature:    { icon: '🌡️', unit: '°C',  color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+    humidity:       { icon: '💧', unit: '%',    color: '#06b6d4', bg: 'rgba(6,182,212,0.15)' },
+    soil_moisture:  { icon: '🌱', unit: '%',    color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+    light_intensity:{ icon: '☀️', unit: 'lux',  color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)' },
+    ph_level:       { icon: '⚗️', unit: 'pH',   color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+    wind_speed:     { icon: '💨', unit: 'km/h', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+    rainfall:       { icon: '🌧️', unit: 'mm',   color: '#06b6d4', bg: 'rgba(6,182,212,0.15)' },
+    co2_level:      { icon: '🏭', unit: 'ppm',  color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+    pressure:       { icon: '🔵', unit: 'hPa',  color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)' },
+    uv_index:       { icon: '🔆', unit: 'UV',   color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+};
+
+// ── Tab Navigation ──
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+});
+
+// ── Toast ──
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastText').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ── Fetch All Data ──
+async function fetchAll() {
+    try {
+        const [sensors, market, buyer, seller, organizer, orders, txns] = await Promise.all([
+            fetch(API + '/api/sensors').then(r => r.json()),
+            fetch(API + '/api/market').then(r => r.json()),
+            fetch(API + '/api/stats/buyer').then(r => r.json()),
+            fetch(API + '/api/stats/seller').then(r => r.json()),
+            fetch(API + '/api/stats/organizer').then(r => r.json()),
+            fetch(API + '/api/orders').then(r => r.json()),
+            fetch(API + '/api/transactions').then(r => r.json()),
+        ]);
+
+        sensorData = sensors.sensors;
+        marketData = market.commodities;
+        networkStats = market.network_stats;
+        clusterHealth = market.cluster_health;
+        buyerStats = buyer.stats;
+        sellerStats = seller.stats;
+        organizerStats = organizer.stats;
+        ordersData = orders.orders;
+        transactionsData = txns.transactions;
+
+        renderSensors();
+        renderMarket();
+        renderDashboardStats();
+        renderOrders();
+        updateTimestamp();
+    } catch (err) {
+        console.error('Fetch error:', err);
+    }
+}
+
+function updateTimestamp() {
+    document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+}
+
+// ── Render Sensors ──
+function renderSensors() {
+    const grid = document.getElementById('sensorGrid');
+    grid.innerHTML = '';
+    
+    for (const [key, value] of Object.entries(sensorData)) {
+        const meta = SENSOR_META[key] || { icon: '📡', unit: '', color: '#10b981', bg: 'rgba(16,185,129,0.15)' };
+        const label = key.replace(/_/g, ' ');
+        
+        const card = document.createElement('div');
+        card.className = 'card sensor-card animate-in';
+        card.innerHTML = `
+            <div class="sensor-header">
+                <div class="sensor-icon" style="background: ${meta.bg}; color: ${meta.color};">${meta.icon}</div>
+                <span class="sensor-label">${label}</span>
+            </div>
+            <div class="sensor-value">${typeof value === 'number' ? value.toFixed(1) : value} <span>${meta.unit}</span></div>
+            <div class="sensor-input-row">
+                <input type="number" class="sensor-input" id="input-${key}" value="${value}" step="0.1">
+                <button class="sensor-btn" onclick="updateSensor('${key}')">Set</button>
+            </div>
+        `;
+        grid.appendChild(card);
+    }
+}
+
+// ── Render Market ──
+function renderMarket() {
+    const tbody = document.getElementById('marketBody');
+    tbody.innerHTML = '';
+    
+    marketData.forEach((c, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="market-name">${c.name}</td>
+            <td><input class="stat-input" style="width: 100px;" value="${c.price}" onchange="marketData[${i}].price=parseFloat(this.value)"></td>
+            <td><input class="stat-input ${c.change > 0 ? 'trend-up' : 'trend-down'}" style="width: 80px;" value="${c.change}" onchange="marketData[${i}].change=parseFloat(this.value)"></td>
+            <td style="color: var(--text-soft); font-size: 0.8rem;">${c.volume}</td>
+            <td>
+                <select class="stat-input" style="width: 90px;" onchange="marketData[${i}].trend=this.value">
+                    <option value="bullish" ${c.trend === 'bullish' ? 'selected' : ''}>Bullish</option>
+                    <option value="bearish" ${c.trend === 'bearish' ? 'selected' : ''}>Bearish</option>
+                    <option value="stable" ${c.trend === 'stable' ? 'selected' : ''}>Stable</option>
+                </select>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Network stats
+    const nsCard = document.getElementById('networkStatsCard');
+    nsCard.innerHTML = `<h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Network Stats</h3>`;
+    for (const [key, val] of Object.entries(networkStats)) {
+        const row = document.createElement('div');
+        row.className = 'stat-row';
+        row.innerHTML = `
+            <span class="stat-key">${key.replace(/_/g, ' ')}</span>
+            <input class="stat-input" style="width: 100px;" value="${val}" onchange="networkStats['${key}']= isNaN(parseFloat(this.value)) ? this.value : parseFloat(this.value)">
+        `;
+        nsCard.appendChild(row);
+    }
+
+    // Cluster health
+    const chCard = document.getElementById('clusterHealthCard');
+    chCard.innerHTML = `<h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Cluster Health</h3>`;
+    clusterHealth.forEach((h, i) => {
+        const row = document.createElement('div');
+        row.style.marginBottom = '1rem';
+        row.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.375rem;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">${h.name}</span>
+                <input class="stat-input" style="width: 60px; text-align: center;" value="${h.value}" onchange="clusterHealth[${i}].value=parseInt(this.value)">
+            </div>
+            <div style="height: 6px; background: rgba(148,163,184,0.1); border-radius: 10px; overflow: hidden;">
+                <div style="height: 100%; width: ${h.value}%; background: ${h.color}; transition: width 0.3s;"></div>
+            </div>
+        `;
+        chCard.appendChild(row);
+    });
+}
+
+// ── Render Dashboard Stats ──
+function renderDashboardStats() {
+    renderStatCard('buyerStatsCard', '🛒 Buyer Dashboard', buyerStats, 'saveBuyerStats');
+    renderStatCard('sellerStatsCard', '🏪 Seller Dashboard', sellerStats, 'saveSellerStats');
+    renderStatCard('organizerStatsCard', '🏗️ Organizer Dashboard', organizerStats, 'saveOrganizerStats');
+}
+
+function renderStatCard(containerId, title, stats, saveFn) {
+    const card = document.getElementById(containerId);
+    card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom: 0;">${title}</h3>
+            <button class="save-btn" onclick="${saveFn}()">Save</button>
+        </div>
+    `;
+    
+    for (const [key, val] of Object.entries(stats)) {
+        const row = document.createElement('div');
+        row.className = 'stat-row';
+        row.innerHTML = `
+            <span class="stat-key">${key.replace(/_/g, ' ')}</span>
+            <div class="stat-value-edit">
+                <input class="stat-input" id="${containerId}-${key}" value="${val}" onchange="this.dataset.dirty='true'">
+            </div>
+        `;
+        card.appendChild(row);
+    }
+}
+
+// ── Render Orders ──
+function renderOrders() {
+    const tbody = document.getElementById('ordersBody');
+    tbody.innerHTML = '';
+    ordersData.forEach(o => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><span class="pin-badge">${o.pickup_code}</span></td>
+            <td style="font-weight: 700; color: var(--text-main);">${o.buyer_name}</td>
+            <td>${o.product_name}</td>
+            <td style="font-family: 'JetBrains Mono'; font-weight: 700;">₹${o.total_price.toLocaleString()}</td>
+            <td><span class="status-pill status-${o.status}">${o.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    const txnBody = document.getElementById('txnBody');
+    txnBody.innerHTML = '';
+    transactionsData.forEach(t => {
+        const tr = document.createElement('tr');
+        const date = new Date(t.created_at);
+        tr.innerHTML = `
+            <td style="font-family: 'JetBrains Mono'; font-size: 0.8rem;">${t.order_id.substring(0, 12)}</td>
+            <td style="font-family: 'JetBrains Mono'; font-weight: 700;">₹${t.amount.toLocaleString()}</td>
+            <td><span class="status-pill status-${t.status}">${t.status}</span></td>
+            <td style="font-size: 0.8rem;">${date.toLocaleDateString()}</td>
+        `;
+        txnBody.appendChild(tr);
+    });
+}
+
+// ── Update Actions ──
+async function updateSensor(key) {
+    const input = document.getElementById('input-' + key);
+    const value = parseFloat(input.value);
+    
+    try {
+        await fetch(API + `/api/sensors/${key}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value })
+        });
+        sensorData[key] = value;
+        renderSensors();
+        showToast(`${key.replace(/_/g, ' ')} updated to ${value}`);
+    } catch (err) {
+        showToast('Error updating sensor');
+    }
+}
+
+async function saveAllSensors() {
+    const updates = {};
+    for (const key of Object.keys(sensorData)) {
+        const input = document.getElementById('input-' + key);
+        if (input) updates[key] = parseFloat(input.value);
+    }
+    
+    try {
+        await fetch(API + '/api/sensors', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+        await fetchAll();
+        showToast('All sensors updated!');
+    } catch (err) {
+        showToast('Error saving sensors');
+    }
+}
+
+function randomizeSensors() {
+    const ranges = {
+        temperature: [15, 45], humidity: [20, 95], soil_moisture: [10, 80],
+        light_intensity: [100, 1200], ph_level: [4.0, 9.0], wind_speed: [0, 60],
+        rainfall: [0, 50], co2_level: [300, 800], pressure: [980, 1040], uv_index: [0, 11]
+    };
+    
+    for (const key of Object.keys(sensorData)) {
+        const [min, max] = ranges[key] || [0, 100];
+        const input = document.getElementById('input-' + key);
+        if (input) input.value = (Math.random() * (max - min) + min).toFixed(1);
+    }
+    showToast('Values randomized — click Save All to apply');
+}
+
+function resetSensors() {
+    const defaults = {
+        temperature: 28.5, humidity: 65.0, soil_moisture: 42.0, light_intensity: 780.0,
+        ph_level: 6.8, wind_speed: 12.5, rainfall: 0.0, co2_level: 410.0,
+        pressure: 1013.25, uv_index: 5.2
+    };
+    for (const [key, val] of Object.entries(defaults)) {
+        const input = document.getElementById('input-' + key);
+        if (input) input.value = val;
+    }
+    showToast('Values reset — click Save All to apply');
+}
+
+async function saveMarketData() {
+    try {
+        await fetch(API + '/api/market', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                commodities: marketData,
+                network_stats: networkStats,
+                cluster_health: clusterHealth
+            })
+        });
+        showToast('Market data saved!');
+    } catch (err) {
+        showToast('Error saving market data');
+    }
+}
+
+async function saveBuyerStats() {
+    const updates = {};
+    for (const key of Object.keys(buyerStats)) {
+        const input = document.getElementById('buyerStatsCard-' + key);
+        if (input) updates[key] = isNaN(parseFloat(input.value)) ? input.value : parseFloat(input.value);
+    }
+    
+    try {
+        await fetch(API + '/api/stats/buyer', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+        showToast('Buyer stats saved!');
+    } catch (err) {
+        showToast('Error saving buyer stats');
+    }
+}
+
+async function saveSellerStats() {
+    const updates = {};
+    for (const key of Object.keys(sellerStats)) {
+        const input = document.getElementById('sellerStatsCard-' + key);
+        if (input) updates[key] = isNaN(parseFloat(input.value)) ? input.value : parseFloat(input.value);
+    }
+    
+    try {
+        await fetch(API + '/api/stats/seller', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+        showToast('Seller stats saved!');
+    } catch (err) {
+        showToast('Error saving seller stats');
+    }
+}
+
+async function saveOrganizerStats() {
+    const updates = {};
+    for (const key of Object.keys(organizerStats)) {
+        const input = document.getElementById('organizerStatsCard-' + key);
+        if (input) updates[key] = isNaN(parseFloat(input.value)) ? input.value : parseFloat(input.value);
+    }
+    
+    try {
+        await fetch(API + '/api/stats/organizer', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+        showToast('Organizer stats saved!');
+    } catch (err) {
+        showToast('Error saving organizer stats');
+    }
+}
+
+// ── Auto-Refresh ──
+fetchAll();
+setInterval(fetchAll, 5000);
+</script>
+</body>
+</html>

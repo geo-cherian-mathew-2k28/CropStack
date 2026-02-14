@@ -84,7 +84,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
             <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
                 <div style={{ textAlign: 'center' }}>
                     <div className="shimmer" style={{ width: '64px', height: '64px', borderRadius: '16px', margin: '0 auto 1.5rem', background: 'var(--primary-soft)' }}></div>
-                    <h3 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Synchronizing Node...</h3>
+                    <h3 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading...</h3>
                 </div>
             </div>
         );
@@ -98,8 +98,8 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                     <div style={{ width: '64px', height: '64px', background: '#fff1f2', color: '#e11d48', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
                         <AlertCircle size={32} />
                     </div>
-                    <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Profile Sync Unavailable</h2>
-                    <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem', lineHeight: 1.6 }}>Your node identifies as <strong>{user.email}</strong>, but the institutional profile registry is not responding.</p>
+                    <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Profile Not Found</h2>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem', lineHeight: 1.6 }}>You're signed in as <strong>{user.email}</strong>, but we couldn't load your profile. Please try again.</p>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <button
@@ -107,10 +107,10 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                             className="btn-modern btn-primary-modern"
                             style={{ width: '100%', height: '52px' }}
                         >
-                            {syncRetry > 0 ? `Re-scanning (${syncRetry})...` : 'Attempt Force Re-sync'}
+                            {syncRetry > 0 ? `Retrying (${syncRetry})...` : 'Try Again'}
                         </button>
                         <button onClick={() => signOut()} className="btn-modern btn-secondary-modern" style={{ width: '100%', height: '52px' }}>
-                            Identify as Different Node
+                            Sign in with a different account
                         </button>
                     </div>
                 </div>
@@ -121,9 +121,9 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
     if (!profile) return null;
 
     const notifications = [
-        { id: 1, title: 'Node Synchronization High', time: '2 mins ago', type: 'success' },
-        { id: 2, title: 'New Lot Allocation Request', time: '15 mins ago', type: 'info' },
-        { id: 3, title: 'Regional Hub Update v4.2', time: '1 hour ago', type: 'update' }
+        { id: 1, title: 'New order received', time: '2 mins ago', type: 'success' },
+        { id: 2, title: 'A buyer placed a pre-order', time: '15 mins ago', type: 'info' },
+        { id: 3, title: 'Market prices updated', time: '1 hour ago', type: 'update' }
     ];
 
     return (
@@ -154,7 +154,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <Link href="/market" style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'none' }}>Market Hub</Link>
+                        <Link href="/market" style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'none' }}>Market Prices</Link>
 
                         <div style={{ position: 'relative' }} ref={notificationRef}>
                             <button onClick={() => setShowNotifications(!showNotifications)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', position: 'relative' }}>
@@ -191,7 +191,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                             {showProfileMenu && (
                                 <div className="card-white" style={{ position: 'absolute', top: '100%', right: 0, width: '200px', marginTop: '1rem', padding: '0.5rem', zIndex: 100 }}>
                                     <Link href="/settings" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}><Settings size={18} /> Settings</Link>
-                                    <button onClick={() => signOut()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', color: 'var(--error)', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}><LogOut size={18} /> Terminate Session</button>
+                                    <button onClick={() => signOut()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', color: 'var(--error)', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}><LogOut size={18} /> Sign Out</button>
                                 </div>
                             )}
                         </div>

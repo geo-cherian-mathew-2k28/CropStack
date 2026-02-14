@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         if (isMounted.current) fetchProfile(userId, retryCount + 1);
                     }, 1000);
                 } else {
-                    console.error("Institutional Identity Error:", {
+                    console.error("Profile fetch error:", {
                         message: error?.message,
                         details: error?.details,
                         hint: error?.hint,
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             }
         } catch (err) {
-            console.error("Network synchronization protocol failure:", err);
+            console.error("Auth state error:", err);
             if (isMounted.current) setProfile(null);
         }
     };
@@ -111,17 +111,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const signOut = async () => {
         try {
-            setLoading(true);
+            // Clear local state immediately so the UI reacts right away
+            setUser(null);
+            setProfile(null);
+            // Sign out from Supabase (clears session/cookies)
             await supabase.auth.signOut();
-            if (isMounted.current) {
-                setUser(null);
-                setProfile(null);
-                await router.push('/login');
-            }
+            // Navigate — use replace so back button won't return to dashboard
+            router.replace('/login');
         } catch (err: any) {
             if (err.name === 'AbortError' || err.message?.includes('signal is aborted')) return;
-        } finally {
-            if (isMounted.current) setLoading(false);
+            console.error('Sign out error:', err);
+            // Even on error, redirect to login
+            router.replace('/login');
         }
     };
 

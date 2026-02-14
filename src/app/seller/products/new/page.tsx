@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 import {
     Package,
     Upload,
@@ -14,7 +13,7 @@ import {
     Info,
     Warehouse,
     ShieldCheck,
-    Database,
+    Sprout,
     Globe
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -23,7 +22,6 @@ import Link from 'next/link';
 export default function NewProduct() {
     const { user } = useAuth();
     const { t } = useLanguage();
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -42,22 +40,30 @@ export default function NewProduct() {
         e.preventDefault();
         setLoading(true);
 
-        const { error } = await supabase
-            .from('products')
-            .insert({
-                ...formData,
-                seller_id: user?.id,
-                price_per_unit: parseFloat(formData.price_per_unit),
-                quantity_available: parseFloat(formData.quantity_available),
-                is_active: true
-            });
+        try {
+            const { error } = await supabase
+                .from('products')
+                .insert({
+                    ...formData,
+                    seller_id: user?.id,
+                    price_per_unit: parseFloat(formData.price_per_unit),
+                    quantity_available: parseFloat(formData.quantity_available),
+                    is_active: true
+                });
 
-        if (error) {
-            alert(error.message);
-            setLoading(false);
-        } else {
-            router.push('/seller/products');
+            if (error) {
+                alert('Could not add your crop: ' + error.message);
+            } else {
+                // Hard redirect to avoid race conditions
+                window.location.href = '/seller/products';
+                return;
+            }
+        } catch (err) {
+            console.error('Submit error:', err);
+            alert('Something went wrong. Please try again.');
         }
+
+        setLoading(false);
     };
 
     return (
@@ -70,24 +76,24 @@ export default function NewProduct() {
                 <div className="card-white" style={{ padding: '3.5rem' }}>
                     <div style={{ marginBottom: '3rem' }}>
                         <h2 style={{ fontSize: '1.875rem', color: 'var(--secondary)', marginBottom: '0.5rem' }}>{t('inventory')}</h2>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Initialize a new storage lot in the node network.</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Add your crop details below to list it for sale.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Product Node Name</label>
+                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Crop Name</label>
                                 <input
                                     type="text"
                                     className="input-modern"
-                                    placeholder="e.g. Basmati Rice Batch A4"
+                                    placeholder="e.g. Basmati Rice"
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Storage Category</label>
+                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Category</label>
                                 <select
                                     className="input-modern"
                                     value={formData.category}
@@ -99,11 +105,11 @@ export default function NewProduct() {
                         </div>
 
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Technical Description</label>
+                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Description</label>
                             <textarea
                                 className="input-modern"
                                 style={{ minHeight: '120px', padding: '1rem', resize: 'vertical' }}
-                                placeholder="Detail the moisture levels, grade, and harvest date..."
+                                placeholder="Describe your crop — quality, grade, harvest date..."
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             />
@@ -111,7 +117,7 @@ export default function NewProduct() {
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Unit Segment</label>
+                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Selling Unit</label>
                                 <select
                                     className="input-modern"
                                     value={formData.unit}
@@ -121,7 +127,7 @@ export default function NewProduct() {
                                 </select>
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rate ({t('currency_symbol')})</label>
+                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Price ({t('currency_symbol')})</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -134,7 +140,7 @@ export default function NewProduct() {
                             </div>
 
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Net Quantity</label>
+                                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Quantity Available</label>
                                 <input
                                     type="number"
                                     className="input-modern"
@@ -147,7 +153,7 @@ export default function NewProduct() {
                         </div>
 
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Batch Imagery URL</label>
+                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Photo Link (optional)</label>
                             <div style={{ position: 'relative' }}>
                                 <Upload size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-soft)' }} />
                                 <input
@@ -179,38 +185,38 @@ export default function NewProduct() {
                                 <ShieldCheck size={20} color="var(--primary)" />
                             </div>
                             <div>
-                                <h4 style={{ fontSize: '0.95rem', marginBottom: '0.25rem' }}>Verification Active</h4>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-soft)', lineHeight: 1.4 }}>Your listing will be automatically validated by the digital storage protocol (Node-Sync v4).</p>
+                                <h4 style={{ fontSize: '0.95rem', marginBottom: '0.25rem' }}>Quality Checked</h4>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-soft)', lineHeight: 1.4 }}>Your listing will be reviewed to ensure buyers get accurate information about your crops.</p>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <div style={{ width: '40px', height: '40px', background: 'var(--success-soft)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Database size={20} color="var(--success)" />
+                                <Sprout size={20} color="var(--success)" />
                             </div>
                             <div>
-                                <h4 style={{ fontSize: '0.95rem', marginBottom: '0.25rem' }}>Real-time Audit</h4>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-soft)', lineHeight: 1.4 }}>Inventory levels are tracked in real-time across regional silos for 100% accuracy.</p>
+                                <h4 style={{ fontSize: '0.95rem', marginBottom: '0.25rem' }}>Live Stock Tracking</h4>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-soft)', lineHeight: 1.4 }}>Your stock levels update automatically when buyers place orders.</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="card-white" style={{ padding: '2.5rem', background: 'var(--secondary)', color: 'white' }}>
-                        <h3 style={{ color: 'white', fontSize: '1.125rem', marginBottom: '1.25rem' }}>Regional Node Capacity</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>Currently accepting bulk lots in North and West India hubs.</p>
+                        <h3 style={{ color: 'white', fontSize: '1.125rem', marginBottom: '1.25rem' }}>Where Can Buyers Find You?</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>Your crops will be visible to buyers across all of India.</p>
 
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', pb: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                             <Globe size={20} color="var(--primary)" />
                             <div>
-                                <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>Pan-India Support</p>
-                                <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>Full localization enabled for South Indian hubs.</p>
+                                <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>All India Coverage</p>
+                                <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>Available in multiple languages for all regions.</p>
                             </div>
                         </div>
 
                         <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
-                            <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Sync Status</p>
+                            <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Platform Status</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)' }}></div>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>PROTOCOL OPERATIONAL</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>EVERYTHING WORKING</span>
                             </div>
                         </div>
                     </div>

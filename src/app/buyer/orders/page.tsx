@@ -57,7 +57,7 @@ export default function ActiveStock() {
         <DashboardLayout role="buyer">
             <div style={{ marginBottom: '2.5rem' }}>
                 <h1 style={{ fontSize: '1.875rem' }}>{t('orders')}</h1>
-                <p style={{ color: 'var(--text-muted)' }}>Institutional allocation ledger and physical clearance protocols.</p>
+                <p style={{ color: 'var(--text-muted)' }}>Track and manage all your orders.</p>
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem' }}>
@@ -66,7 +66,7 @@ export default function ActiveStock() {
                     <input
                         type="text"
                         className="input-modern"
-                        placeholder="Search Protocol ID or Asset Name..."
+                        placeholder="Search order number or crop name..."
                         style={{ paddingLeft: '2.75rem', height: '48px' }}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -86,19 +86,19 @@ export default function ActiveStock() {
                     <div style={{ width: '64px', height: '64px', background: 'var(--bg-main)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
                         <History size={32} color="var(--text-soft)" />
                     </div>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No active allocations</h3>
-                    <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Secure your first warehouse lot from the exchange.</p>
-                    <Link href="/buyer/catalog" className="btn-modern btn-primary-modern">Explore Exchange</Link>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No orders yet</h3>
+                    <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Browse crops and place your first order.</p>
+                    <Link href="/buyer/catalog" className="btn-modern btn-primary-modern">Browse Crops</Link>
                 </div>
             ) : (
                 <div className="card-white" style={{ overflow: 'hidden' }}>
                     <table className="table-modern">
                         <thead>
                             <tr>
-                                <th>ASSET PROTOCOL</th>
-                                <th>LOT DETAILS</th>
-                                <th>ALLOCATION VAL</th>
-                                <th>AUDIT STATUS</th>
+                                <th>CROP</th>
+                                <th>QUANTITY</th>
+                                <th>AMOUNT</th>
+                                <th>STATUS</th>
                                 <th style={{ textAlign: 'right' }}>ACTION</th>
                             </tr>
                         </thead>
@@ -120,11 +120,11 @@ export default function ActiveStock() {
                                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                             <Package size={14} /> {order.quantity} {t('unit_q')}
                                         </div>
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', marginTop: '0.25rem' }}>Lot SKU: {order.product_id.slice(0, 6)}</p>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', marginTop: '0.25rem' }}>Product: {order.product_id.slice(0, 6)}</p>
                                     </td>
                                     <td>
                                         <p style={{ fontWeight: 800, fontSize: '1rem' }}>{t('currency_symbol')}{order.total_price.toFixed(2)}</p>
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}>ESCROW ACTIVE</p>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}>PAID</p>
                                     </td>
                                     <td>
                                         <span className={`badge-clean ${order.status === 'completed' ? 'badge-success' : 'badge-pending'}`}>
