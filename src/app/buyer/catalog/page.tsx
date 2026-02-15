@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { supabase, Product } from '@/lib/supabase';
+import { Product } from '@/lib/supabase';
+import { db, collection, query, where, orderBy, getDocs } from '@/lib/firebase';
 import { Search, Filter, ShoppingCart, Loader2, ArrowRight, Star, Clock, Info, LayoutGrid, List, Warehouse } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
@@ -18,21 +19,33 @@ export default function Catalog() {
         const fetchProducts = async () => {
             const cropCategories = ['Grains', 'Rice', 'Wheat', 'Legumes', 'Pulses'];
 
-            let query = supabase
-                .from('products')
-                .select('*')
-                .eq('is_active', true)
-                .in('category', cropCategories)
-                .gt('quantity_available', 0);
+            try {
+                let q;
+                if (categoryFilter !== 'All') {
+                    q = query(
+                        collection(db, 'products'),
+                        where('is_active', '==', true),
+                        where('category', '==', categoryFilter),
+                        orderBy('created_at', 'desc')
+                    );
+                } else {
+                    q = query(
+                        collection(db, 'products'),
+                        where('is_active', '==', true),
+                        orderBy('created_at', 'desc')
+                    );
+                }
 
-            if (categoryFilter !== 'All') {
-                query = query.eq('category', categoryFilter);
-            }
+                const snapshot = await getDocs(q);
+                const allProducts = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
 
-            const { data, error } = await query.order('created_at', { ascending: false });
-
-            if (!error && data) {
-                setProducts(data);
+                // Client-side filters for category list and quantity
+                const filtered = allProducts.filter(p =>
+                    cropCategories.includes(p.category) && p.quantity_available > 0
+                );
+                setProducts(filtered);
+            } catch (err) {
+                console.error('Error fetching catalog:', err);
             }
             setLoading(false);
         };

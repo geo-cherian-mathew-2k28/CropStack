@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { auth, db, doc, setDoc, getDoc, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from '@/lib/firebase';
 import Link from 'next/link';
 import {
     Warehouse,
@@ -12,7 +12,6 @@ import {
     Briefcase,
     Shield,
     Zap,
-    ExternalLink,
     ShoppingBag,
     Sprout,
     Fingerprint
@@ -26,7 +25,6 @@ export default function SignUpPage() {
     const [role, setRole] = useState<'buyer' | 'seller' | 'organizer'>('buyer');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [showConfigAdvice, setShowConfigAdvice] = useState(false);
 
     const isMounted = useRef(true);
 
@@ -46,16 +44,11 @@ export default function SignUpPage() {
         const testPass = 'password123';
 
         try {
-            const { data, error: connectError } = await supabase.auth.signInWithPassword({
-                email: testEmail,
-                password: testPass
-            });
+            const userCredential = await signInWithEmailAndPassword(auth, testEmail, testPass);
 
             if (!isMounted.current) return;
 
-            if (connectError) {
-                setError(`Login failed: ${connectError.message}`);
-            } else if (data.user) {
+            if (userCredential.user) {
                 window.location.href = `/${targetRole}/dashboard`;
                 return;
             }
@@ -64,7 +57,7 @@ export default function SignUpPage() {
             if (err.name === 'AbortError' || err.message?.includes('signal is aborted')) {
                 // Navigation aborted — that's okay
             } else {
-                setError('Something went wrong. Please try again.');
+                setError(`Login failed: ${err.message}`);
             }
         }
 
@@ -77,52 +70,66 @@ export default function SignUpPage() {
 
         setLoading(true);
         setError(null);
-        setShowConfigAdvice(false);
 
         try {
             // Step 1: Try to sign in first (maybe account already exists)
-            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+            try {
+                const loginCredential = await signInWithEmailAndPassword(auth, email, password);
+
+                if (!isMounted.current) return;
+
+                if (loginCredential.user) {
+                    const profileSnap = await getDoc(doc(db, 'profiles', loginCredential.user.uid));
+                    const profileRole = profileSnap.exists() ? profileSnap.data().role : 'buyer';
+
+                    window.location.href = `/${profileRole}/dashboard`;
+                    return;
+                }
+            } catch (loginErr: any) {
+                // Login failed — that's expected for new users, continue to sign up
+                if (loginErr.code !== 'auth/invalid-credential' &&
+                    loginErr.code !== 'auth/wrong-password' &&
+                    loginErr.code !== 'auth/user-not-found') {
+                    throw loginErr; // Re-throw unexpected errors
+                }
+            }
 
             if (!isMounted.current) return;
 
-            if (loginData?.user && !loginError) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', loginData.user.id)
-                    .single();
+            // Step 2: Create new account with Firebase
+            const signUpCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const newUser = signUpCredential.user;
 
-                window.location.href = `/${profile?.role || 'buyer'}/dashboard`;
-                return;
-            }
+            if (!isMounted.current) return;
 
-            // Step 2: Create new account
-            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: role === 'buyer' ? 'Buyer' : role === 'seller' ? 'Seller' : 'Manager',
-                        role: role
-                    }
-                }
+            // Set display name
+            const displayName = role === 'buyer' ? 'Buyer' : role === 'seller' ? 'Seller' : 'Manager';
+            await updateProfile(newUser, { displayName });
+
+            // Create profile in Firestore
+            await setDoc(doc(db, 'profiles', newUser.uid), {
+                email: email,
+                full_name: displayName,
+                role: role,
+                avatar_url: null,
+                created_at: new Date().toISOString(),
             });
 
-            if (!isMounted.current) return;
+            window.location.href = `/${role}/dashboard`;
+            return;
 
-            if (signUpError) {
-                setError(signUpError.status === 429 ? 'Too many requests. Please wait a moment and try again.' : signUpError.message);
-            } else if (signUpData?.session) {
-                window.location.href = `/${role}/dashboard`;
-                return;
-            } else {
-                setError('Please check your email to verify your account.');
-                setShowConfigAdvice(true);
-            }
         } catch (err: any) {
             if (!isMounted.current) return;
             if (err.name === 'AbortError' || err.message?.includes('signal is aborted')) {
                 // Navigation aborted — that's okay
+            } else if (err.code === 'auth/email-already-in-use') {
+                setError('An account with this email already exists. Try signing in instead.');
+            } else if (err.code === 'auth/weak-password') {
+                setError('Password is too weak. Please use at least 6 characters.');
+            } else if (err.code === 'auth/invalid-email') {
+                setError('Please enter a valid email address.');
+            } else if (err.code === 'auth/too-many-requests') {
+                setError('Too many requests. Please wait a moment and try again.');
             } else {
                 setError('Something went wrong. Please try again.');
             }
@@ -265,13 +272,6 @@ export default function SignUpPage() {
                                         <AlertCircle size={24} style={{ flexShrink: 0 }} />
                                         <p style={{ fontSize: '0.95rem', fontWeight: 700, lineHeight: 1.4 }}>{error}</p>
                                     </div>
-                                    {showConfigAdvice && (
-                                        <div style={{ background: 'white', padding: '1.25rem', borderRadius: '14px', border: '1px solid #fda4af' }}>
-                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-soft)', fontWeight: 600, marginBottom: '0.75rem' }}>Email verification is turned on.</p>
-                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '1rem' }}>To skip email verification, go to Supabase and turn off <strong>"Confirm Email"</strong> in Auth settings.</p>
-                                            <a href="https://supabase.com/dashboard/project/_/auth/providers" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 900, textDecoration: 'none' }}>Open Supabase Settings <ExternalLink size={14} /></a>
-                                        </div>
-                                    )}
                                 </div>
                             )}
 

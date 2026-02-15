@@ -21,7 +21,7 @@ import {
     Eye,
     EyeOff
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { auth, db, doc, updateDoc, updatePassword, signInWithEmailAndPassword } from '@/lib/firebase';
 
 type SettingsTab = 'profile' | 'security' | 'governance' | 'notifications';
 
@@ -43,15 +43,13 @@ export default function SettingsPage() {
         setLoading(true);
         setMessage(null);
 
-        const { error } = await supabase
-            .from('profiles')
-            .update({ full_name: fullName })
-            .eq('id', user?.id);
-
-        if (error) {
-            setMessage({ type: 'error', text: error.message });
-        } else {
+        try {
+            if (!user?.uid) throw new Error('Not authenticated');
+            const profileRef = doc(db, 'profiles', user.uid);
+            await updateDoc(profileRef, { full_name: fullName });
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Failed to update profile.' });
         }
         setLoading(false);
     };
@@ -64,26 +62,40 @@ export default function SettingsPage() {
             return;
         }
 
+        if (!currentPassword) {
+            setMessage({ type: 'error', text: 'Please enter your current password.' });
+            return;
+        }
+
         setLoading(true);
         setMessage(null);
 
         try {
-            const { error } = await supabase.auth.updateUser({ password: newPassword });
-
-            if (error) {
-                // Handle 422 error which usually means password is too weak or same as current
-                if (error.status === 422) {
-                    setMessage({ type: 'error', text: 'Update Failed: The new password does not meet security requirements or is already in use.' });
-                } else {
-                    setMessage({ type: 'error', text: error.message });
-                }
-            } else {
-                setMessage({ type: 'success', text: 'Password changed successfully.' });
-                setNewPassword('');
-                setCurrentPassword('');
+            // Re-authenticate with current password first (Firebase requires recent auth for sensitive ops)
+            if (user?.email) {
+                await signInWithEmailAndPassword(auth, user.email, currentPassword);
             }
+
+            // Now update the password
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                setMessage({ type: 'error', text: 'You must be signed in to change your password.' });
+                setLoading(false);
+                return;
+            }
+
+            await updatePassword(currentUser, newPassword);
+            setMessage({ type: 'success', text: 'Password changed successfully.' });
+            setNewPassword('');
+            setCurrentPassword('');
         } catch (err: any) {
-            setMessage({ type: 'error', text: 'Something went wrong. Please try again.' });
+            if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                setMessage({ type: 'error', text: 'Current password is incorrect.' });
+            } else if (err.code === 'auth/weak-password') {
+                setMessage({ type: 'error', text: 'The new password is too weak. Use at least 6 characters.' });
+            } else {
+                setMessage({ type: 'error', text: 'Something went wrong. Please try again.' });
+            }
         } finally {
             setLoading(false);
         }
@@ -213,6 +225,21 @@ export default function SettingsPage() {
                                 <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Change Password</h3>
                                 <form onSubmit={handlePasswordUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                     <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Current Password</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <Lock size={18} style={{ position: 'absolute', left: '1.125rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-soft)' }} />
+                                            <input
+                                                type={showPasswords ? "text" : "password"}
+                                                className="input-modern"
+                                                style={{ paddingLeft: '3rem' }}
+                                                placeholder="Enter current password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
                                         <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>New Password</label>
                                         <div style={{ position: 'relative' }}>
                                             <Lock size={18} style={{ position: 'absolute', left: '1.125rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-soft)' }} />
@@ -241,7 +268,7 @@ export default function SettingsPage() {
                                         </div>
                                     )}
 
-                                    <button type="submit" className="btn-modern btn-primary-modern" style={{ width: 'fit-content', height: '52px' }} disabled={loading || !newPassword}>
+                                    <button type="submit" className="btn-modern btn-primary-modern" style={{ width: 'fit-content', height: '52px' }} disabled={loading || !newPassword || !currentPassword}>
                                         {loading ? <Loader2 className="animate-spin" size={20} /> : 'Change Password'}
                                     </button>
                                 </form>

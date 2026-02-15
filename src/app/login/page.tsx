@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { auth, db, doc, getDoc, signInWithEmailAndPassword } from '@/lib/firebase';
 import Link from 'next/link';
 import {
     Warehouse,
@@ -36,34 +36,28 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const { data, error: authError } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
             if (!isMounted.current) return;
 
-            if (authError) {
-                setError(authError.message === 'Invalid login credentials' ? 'Wrong email or password. Please try again.' : authError.message);
-                setLoading(false);
-                return;
-            }
+            const firebaseUser = userCredential.user;
 
-            if (data?.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', data.user.id)
-                    .single();
+            if (firebaseUser) {
+                const profileSnap = await getDoc(doc(db, 'profiles', firebaseUser.uid));
+                const profileRole = profileSnap.exists() ? profileSnap.data().role : 'buyer';
 
                 // Hard redirect to avoid race conditions with auth state listener
-                window.location.href = `/${profile?.role || 'buyer'}/dashboard`;
+                window.location.href = `/${profileRole}/dashboard`;
                 return;
             }
         } catch (err: any) {
             if (!isMounted.current) return;
             if (err.name === 'AbortError' || err.message?.includes('signal is aborted')) {
                 // Navigation was aborted — that's OK
+            } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+                setError('Wrong email or password. Please try again.');
+            } else if (err.code === 'auth/too-many-requests') {
+                setError('Too many failed attempts. Please wait a moment and try again.');
             } else {
                 setError('Something went wrong. Please try again.');
             }

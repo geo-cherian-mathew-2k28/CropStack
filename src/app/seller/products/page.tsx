@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { supabase, Product } from '@/lib/supabase';
+import { Product } from '@/lib/supabase';
+import { db, collection, query, where, orderBy, getDocs, doc, updateDoc } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Edit, Trash2, ExternalLink, Loader2, Info, Package, MoreHorizontal, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -17,14 +18,17 @@ export default function MyProducts() {
     useEffect(() => {
         const fetchProducts = async () => {
             if (!user) return;
-            const { data, error } = await supabase
-                .from('products')
-                .select('*')
-                .eq('seller_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (!error && data) {
+            try {
+                const q = query(
+                    collection(db, 'products'),
+                    where('seller_id', '==', user.uid),
+                    orderBy('created_at', 'desc')
+                );
+                const snapshot = await getDocs(q);
+                const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
                 setProducts(data);
+            } catch (err) {
+                console.error('Error fetching products:', err);
             }
             setLoading(false);
         };
@@ -33,13 +37,11 @@ export default function MyProducts() {
     }, [user]);
 
     const toggleStatus = async (productId: string, currentStatus: boolean) => {
-        const { error } = await supabase
-            .from('products')
-            .update({ is_active: !currentStatus })
-            .eq('id', productId);
-
-        if (!error) {
+        try {
+            await updateDoc(doc(db, 'products', productId), { is_active: !currentStatus });
             setProducts(products.map(p => p.id === productId ? { ...p, is_active: !currentStatus } : p));
+        } catch (err) {
+            console.error('Error toggling status:', err);
         }
     };
 

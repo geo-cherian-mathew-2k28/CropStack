@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { supabase, Product, Order } from '@/lib/supabase';
+import { Product, Order } from '@/lib/supabase';
+import { db, doc, getDoc, addDoc, collection } from '@/lib/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import {
     ArrowLeft,
@@ -32,14 +33,13 @@ export default function ProductDetail() {
 
     useEffect(() => {
         const fetchProduct = async () => {
-            const { data, error } = await supabase
-                .from('products')
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (!error && data) {
-                setProduct(data);
+            try {
+                const productSnap = await getDoc(doc(db, 'products', id));
+                if (productSnap.exists()) {
+                    setProduct({ id: productSnap.id, ...productSnap.data() } as Product);
+                }
+            } catch (err) {
+                console.error('Error fetching product:', err);
             }
             setLoading(false);
         };
@@ -55,25 +55,22 @@ export default function ProductDetail() {
         const reservation_expiry = new Date();
         reservation_expiry.setDate(reservation_expiry.getDate() + 7);
 
-        const { data, error } = await supabase
-            .from('orders')
-            .insert({
-                buyer_id: user.id,
+        try {
+            const orderRef = await addDoc(collection(db, 'orders'), {
+                buyer_id: user.uid,
                 product_id: product.id,
                 quantity: quantity,
                 total_price: product.price_per_unit * quantity,
                 status: 'reserved',
                 pickup_code,
-                reservation_expiry: reservation_expiry.toISOString()
-            })
-            .select()
-            .single();
+                reservation_expiry: reservation_expiry.toISOString(),
+                created_at: new Date().toISOString(),
+            });
 
-        if (error) {
-            alert(error.message);
+            router.push(`/buyer/orders/${orderRef.id}`);
+        } catch (err: any) {
+            alert(err.message || 'Failed to place order.');
             setReserving(false);
-        } else {
-            router.push(`/buyer/orders/${data.id}`);
         }
     };
 

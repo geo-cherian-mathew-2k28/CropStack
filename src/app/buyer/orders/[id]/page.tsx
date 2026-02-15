@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { supabase, Order, Product, Profile } from '@/lib/supabase';
+import { Order, Product } from '@/lib/supabase';
+import { db, doc, getDoc } from '@/lib/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, CheckCircle2, AlertCircle, MapPin, Printer, Share2, Loader2, QrCode, ShieldCheck, Download, Info, Lock } from 'lucide-react';
 import Link from 'next/link';
@@ -17,14 +18,19 @@ export default function OrderReceipt() {
 
     useEffect(() => {
         const fetchOrder = async () => {
-            const { data, error } = await supabase
-                .from('orders')
-                .select('*, products(*)')
-                .eq('id', id)
-                .single();
-
-            if (!error && data) {
-                setOrder(data);
+            try {
+                const orderSnap = await getDoc(doc(db, 'orders', id));
+                if (orderSnap.exists()) {
+                    const orderData = { id: orderSnap.id, ...orderSnap.data() } as Order;
+                    // Fetch associated product
+                    const productSnap = await getDoc(doc(db, 'products', orderData.product_id));
+                    const productData = productSnap.exists()
+                        ? { id: productSnap.id, ...productSnap.data() } as Product
+                        : { id: orderData.product_id, name: 'Unknown', category: '', price_per_unit: 0, quantity_available: 0, unit: '', seller_id: '', description: null, image_url: null, is_active: false, created_at: '' } as Product;
+                    setOrder({ ...orderData, products: productData });
+                }
+            } catch (err) {
+                console.error('Error fetching order:', err);
             }
             setLoading(false);
         };

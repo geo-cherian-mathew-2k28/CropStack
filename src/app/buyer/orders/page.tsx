@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { supabase, Order, Product } from '@/lib/supabase';
+import { Order, Product } from '@/lib/supabase';
+import { db, collection, query, where, orderBy, getDocs, doc, getDoc } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -33,14 +34,29 @@ export default function ActiveStock() {
     useEffect(() => {
         const fetchOrders = async () => {
             if (!user) return;
-            const { data, error } = await supabase
-                .from('orders')
-                .select('*, products(*)')
-                .eq('buyer_id', user.id)
-                .order('created_at', { ascending: false });
+            try {
+                const q = query(
+                    collection(db, 'orders'),
+                    where('buyer_id', '==', user.uid),
+                    orderBy('created_at', 'desc')
+                );
+                const snapshot = await getDocs(q);
+                const ordersData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
 
-            if (!error && data) {
-                setOrders(data);
+                // Fetch associated products
+                const ordersWithProducts: OrderWithProduct[] = await Promise.all(
+                    ordersData.map(async (order) => {
+                        const productSnap = await getDoc(doc(db, 'products', order.product_id));
+                        const product = productSnap.exists()
+                            ? { id: productSnap.id, ...productSnap.data() } as Product
+                            : { id: order.product_id, name: 'Unknown', category: '', price_per_unit: 0, quantity_available: 0, unit: '', seller_id: '', description: null, image_url: null, is_active: false, created_at: '' } as Product;
+                        return { ...order, products: product };
+                    })
+                );
+
+                setOrders(ordersWithProducts);
+            } catch (err) {
+                console.error('Error fetching orders:', err);
             }
             setLoading(false);
         };

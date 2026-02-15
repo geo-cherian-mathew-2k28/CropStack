@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { supabase } from '@/lib/supabase';
+import { db, addDoc, collection } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import {
     Package,
@@ -41,26 +41,25 @@ export default function NewProduct() {
         setLoading(true);
 
         try {
-            const { error } = await supabase
-                .from('products')
-                .insert({
-                    ...formData,
-                    seller_id: user?.id,
-                    price_per_unit: parseFloat(formData.price_per_unit),
-                    quantity_available: parseFloat(formData.quantity_available),
-                    is_active: true
-                });
+            await addDoc(collection(db, 'products'), {
+                name: formData.name,
+                description: formData.description || null,
+                category: formData.category,
+                unit: formData.unit,
+                image_url: formData.image_url || null,
+                seller_id: user?.uid,
+                price_per_unit: parseFloat(formData.price_per_unit),
+                quantity_available: parseFloat(formData.quantity_available),
+                is_active: true,
+                created_at: new Date().toISOString(),
+            });
 
-            if (error) {
-                alert('Could not add your crop: ' + error.message);
-            } else {
-                // Hard redirect to avoid race conditions
-                window.location.href = '/seller/products';
-                return;
-            }
-        } catch (err) {
+            // Hard redirect to avoid race conditions
+            window.location.href = '/seller/products';
+            return;
+        } catch (err: any) {
             console.error('Submit error:', err);
-            alert('Something went wrong. Please try again.');
+            alert('Could not add your crop: ' + (err.message || 'Something went wrong.'));
         }
 
         setLoading(false);

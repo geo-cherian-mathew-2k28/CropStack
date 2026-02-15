@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { supabase, Product } from '@/lib/supabase';
+import { Product } from '@/lib/supabase';
+import { db, collection, query, orderBy, getDocs } from '@/lib/firebase';
 import { useLanguage } from '@/context/LanguageContext';
 import {
     Warehouse,
@@ -26,13 +27,16 @@ export default function OrganizerInventory() {
 
     useEffect(() => {
         const fetchAllInventory = async () => {
-            const { data, error } = await supabase
-                .from('products')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (!error && data) {
+            try {
+                const q = query(
+                    collection(db, 'products'),
+                    orderBy('created_at', 'desc')
+                );
+                const snapshot = await getDocs(q);
+                const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
                 setProducts(data);
+            } catch (err) {
+                console.error('Error fetching inventory:', err);
             }
             setLoading(false);
         };
