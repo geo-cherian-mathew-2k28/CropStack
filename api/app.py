@@ -4,6 +4,9 @@ Serves real-time sensor data, market prices, orders, and transactions.
 Includes an admin dashboard to control all sensor values.
 """
 
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -253,6 +256,7 @@ koyeb_thread.start()
 # ─────────────────────────────────────────────
 
 @app.route('/api/sensor', methods=['POST'])
+@app.route('/sensor', methods=['POST'])  # Support legacy code
 def receive_sensor_data():
     """Receive data from DHT11/ESP32 (Compatible with IEDC Hack code)."""
     # Optional Security: Match the key from your IEDC Hack project
