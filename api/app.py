@@ -24,6 +24,8 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 #  IN-MEMORY DATA STORE
 # ─────────────────────────────────────────────
 
+manual_mode = False  # Global Manual Override Flag
+
 sensor_data = {
     "temperature": 0.0,
     "humidity": 0.0,
@@ -39,7 +41,63 @@ sensor_data = {
     "co2_level": 0.0,
     "pressure": 0.0,
     "uv_index": 0.0,
+    "manual_mode": False
 }
+
+# ... (omitted sensor_data content)
+
+# Record sensor history periodically and run automation
+def sensor_loop():
+    while True:
+        ts = datetime.now().isoformat()  # Define TS here
+        
+        # Sync Manual Mode Status
+        sensor_data["manual_mode"] = manual_mode
+        
+        # Automation Logic: Maintain Temp & Humidity
+        # ONLY RUN IF MANUAL MODE IS OFF
+        if not manual_mode:
+            current_fan = control_state.get("fan", "OFF")
+            target_fan = "OFF"
+            
+            # Check Thresholds
+            if sensor_data.get("temperature", 0) > TEMP_THRESHOLD or sensor_data.get("humidity", 0) > HUMIDITY_THRESHOLD:
+                target_fan = "ON"
+                
+                # Also Auto-Open Vent for Safety
+                if control_state.get("ventilation") != "OPEN":
+                     control_state["ventilation"] = "OPEN"
+                     socketio.emit('control_update', control_state)
+            
+            # Apply Fan Logic (State Change)
+            if current_fan != target_fan:
+                print(f"🤖 [AUTO] Toggling Fan {target_fan} (Temp: {sensor_data.get('temperature')} > {TEMP_THRESHOLD})")
+                control_state["fan"] = target_fan
+                socketio.emit('control_update', control_state)
+            
+        # Sync sensor_data status for display
+        sensor_data["fan_status"] = control_state["fan"]
+
+        for key, val in sensor_data.items():
+            if key not in sensor_history: continue
+            sensor_history[key].append({"time": ts, "value": val})
+            if len(sensor_history[key]) > 100:
+                sensor_history[key] = sensor_history[key][-100:]
+        time.sleep(5)
+
+history_thread = threading.Thread(target=sensor_loop, daemon=True)
+history_thread.start()
+
+# ...
+
+@socketio.on('set_manual_mode')
+def handle_manual_mode(data):
+    print(f"🔧 Manual Mode Toggled: {data}")
+    global manual_mode
+    manual_mode = data.get('enabled', False)
+    # Broadcast to all clients specifically
+    socketio.emit('manual_mode_update', manual_mode)
+
 
 # Automation Thresholds
 TEMP_THRESHOLD = 30.0
@@ -187,29 +245,33 @@ network_stats = {
 # Record sensor history periodically and run automation
 def sensor_loop():
     while True:
-        ts = datetime.now().isoformat()
+        if old_fan != sensor_data["fan_status"]:
+            socketio.emit('sensor_update', sensor_data)
         
         # Automation Logic: Maintain Temp & Humidity
-        current_fan = control_state.get("fan", "OFF")
-        target_fan = "OFF"
-        
-        # Check Thresholds
-        if sensor_data.get("temperature", 0) > TEMP_THRESHOLD or sensor_data.get("humidity", 0) > HUMIDITY_THRESHOLD:
-            target_fan = "ON"
+        # ONLY RUN IF MANUAL MODE IS OFF
+        if not manual_mode:
+            current_fan = control_state.get("fan", "OFF")
+            target_fan = "OFF"
             
-            # Also Auto-Open Vent for Safety
-            if control_state.get("ventilation") != "OPEN":
-                 control_state["ventilation"] = "OPEN"
-                 socketio.emit('control_update', control_state)
-        
-        # Apply Fan Logic (State Change)
-        if current_fan != target_fan:
-            print(f"🤖 [AUTO] Toggling Fan {target_fan} (Temp: {sensor_data.get('temperature')} > {TEMP_THRESHOLD})")
-            control_state["fan"] = target_fan
-            socketio.emit('control_update', control_state)
+            # Check Thresholds
+            if sensor_data.get("temperature", 0) > TEMP_THRESHOLD or sensor_data.get("humidity", 0) > HUMIDITY_THRESHOLD:
+                target_fan = "ON"
+                
+                # Also Auto-Open Vent for Safety
+                if control_state.get("ventilation") != "OPEN":
+                     control_state["ventilation"] = "OPEN"
+                     socketio.emit('control_update', control_state)
+            
+            # Apply Fan Logic (State Change)
+            if current_fan != target_fan:
+                print(f"🤖 [AUTO] Toggling Fan {target_fan} (Temp: {sensor_data.get('temperature')} > {TEMP_THRESHOLD})")
+                control_state["fan"] = target_fan
+                socketio.emit('control_update', control_state)
             
         # Sync sensor_data status for display
         sensor_data["fan_status"] = control_state["fan"]
+        sensor_data["manual_mode"] = manual_mode
 
         for key, val in sensor_data.items():
             sensor_history[key].append({"time": ts, "value": val})
