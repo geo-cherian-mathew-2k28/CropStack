@@ -250,6 +250,35 @@ def connect_to_koyeb():
 koyeb_thread = threading.Thread(target=connect_to_koyeb, daemon=True)
 koyeb_thread.start()
 
+# Control State (For Buttons)
+control_state = {
+    "fan": "OFF",
+    "light": "OFF",
+    "ventilation": "CLOSED"  # CLOSED or OPEN
+}
+
+# ─────────────────────────────────────────────
+#  ROUTES
+# ─────────────────────────────────────────────
+
+@app.route('/')
+def index():
+    """Serve the simple HTML dashboard."""
+    return render_template('dashboard.html')
+
+@app.route('/api/control', methods=['POST'])
+def update_control():
+    """Handle Manual Button Clicks from Dashboard."""
+    global control_state
+    data = request.json
+    
+    if 'fan' in data: control_state['fan'] = data['fan']
+    if 'light' in data: control_state['light'] = data['light']
+    if 'ventilation' in data: control_state['ventilation'] = data['ventilation']
+    
+    # Broadcast new state to everyone (Dashboards)
+    socketio.emit('control_update', control_state)
+    return jsonify({"status": "updated", "state": control_state})
 
 # ─────────────────────────────────────────────
 #  SENSOR API ENDPOINTS
@@ -258,22 +287,6 @@ koyeb_thread.start()
 @app.route('/api/sensor', methods=['POST'])
 @app.route('/sensor', methods=['POST'])  # Support legacy code
 def receive_sensor_data():
-    """Receive data from DHT11/ESP32 (Compatible with IEDC Hack code)."""
-    # Optional Security: Match the key from your IEDC Hack project
-    # backend: SENSOR_API_KEY = 'iot_secure_key_2024_v1'
-    api_key = request.headers.get('X-API-KEY')
-    # Uncomment next lines to enforce security:
-    # if api_key != 'iot_secure_key_2024_v1':
-    #     return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.json
-    if not data:
-        return jsonify({"error": "No data"}), 400
-    
-    if "temperature" in data:
-        sensor_data["temperature"] = float(data["temperature"])
-    if "humidity" in data:
-        sensor_data["humidity"] = float(data["humidity"])
     
     sensor_data["last_pulse"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"📡 [HARDWARE SYNC] Data received: {data}")

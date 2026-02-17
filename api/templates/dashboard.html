@@ -877,12 +877,29 @@
 
             <!-- DASHBOARD STATS TAB -->
             <div class="tab-content" id="tab-dashboards">
-                <div class="section-title">
-                    <h2>Dashboard Controls</h2>
-                    <span class="badge badge-live">● LIVE</span>
+                <div class="stat-card warning">
+                    <h3>⚠️ System Status</h3>
+                    <p id="sys-status">Checking...</p>
                 </div>
 
-                <div class="stats-grid">
+                <!-- Manual Control Panel -->
+                <div class="control-panel"
+                    style="margin-top: 2rem; background: #fff; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <h3 style="margin-bottom: 1rem; color: #334155;">Testing Controls</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                        <button onclick="toggleDevice('fan')" id="btn-fan"
+                            style="padding: 1rem; border: none; background: #e2e8f0; border-radius: 8px; font-weight: bold; cursor: pointer;">FAN:
+                            OFF</button>
+                        <button onclick="toggleDevice('light')" id="btn-light"
+                            style="padding: 1rem; border: none; background: #e2e8f0; border-radius: 8px; font-weight: bold; cursor: pointer;">LIGHT:
+                            OFF</button>
+                        <button onclick="toggleDevice('ventilation')" id="btn-vent"
+                            style="padding: 1rem; border: none; background: #e2e8f0; border-radius: 8px; font-weight: bold; cursor: pointer;">VENT:
+                            CLOSED</button>
+                    </div>
+                </div>
+
+                <div class="chart-container">
                     <div class="card stat-section" id="buyerStatsCard">
                         <!-- Populated by JS -->
                     </div>
@@ -988,6 +1005,40 @@
         socket.on('connect', () => {
             console.log("Connected to local Socket.IO server");
             fetchAll();
+        });
+
+        // Control State
+        let controls = { fan: 'OFF', light: 'OFF', ventilation: 'CLOSED' };
+
+        function toggleDevice(device) {
+            let newVal;
+            if (device === 'ventilation') {
+                newVal = controls[device] === 'CLOSED' ? 'OPEN' : 'CLOSED';
+            } else {
+                newVal = controls[device] === 'OFF' ? 'ON' : 'OFF';
+            }
+
+            // Optimistic UI Update
+            updateBtn(device, newVal);
+
+            // Send to Server
+            fetch('/api/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [device]: newVal })
+            });
+        }
+
+        function updateBtn(device, state) {
+            controls[device] = state;
+            const btn = document.getElementById(device === 'ventilation' ? 'btn-vent' : 'btn-' + device);
+            btn.innerText = device.toUpperCase() + ': ' + state;
+            btn.style.background = (state === 'ON' || state === 'OPEN') ? '#dcfce7' : '#e2e8f0';
+            btn.style.color = (state === 'ON' || state === 'OPEN') ? '#166534' : '#1e293b';
+        }
+
+        socket.on('control_update', (data) => {
+            Object.keys(data).forEach(k => updateBtn(k, data[k]));
         });
 
         socket.on('sensor_update', (data) => {
@@ -1327,8 +1378,29 @@
 
         // ── Auto-Refresh ──
         fetchAll();
-        // Removed polling to prevent blinking. Socket.IO handles real-time updates now.
-    </script>
-</body>
+        // ── Offline Detection ──
+        let lastPacketTime = Date.now();
+        setInterval(() => {
+            if (Date.now() - lastPacketTime > 10000) {
+                document.getElementById('sys-status').innerText = "OFFLINE - Check WiFi";
+                document.getElementById('sys-status').style.color = "gray";
+                document.querySelector('.status-badge').innerHTML = '<div class="status-dot" style="background:gray; animation:none;"></div> SYSTEM OFFLINE';
+                document.querySelector('.status-badge').style.color = "gray";
+                document.querySelector('.status-badge').style.borderColor = "gray";
+            }
+        }, 5000);
 
-</html>
+        socket.on('sensor_update', (data) => {
+            lastPacketTime = Date.now();
+            // Restore Online Status
+            document.querySelector('.status-badge').innerHTML = '<div class="status-dot"></div> ALL SYSTEMS ONLINE';
+            document.querySelector('.status-badge').style.color = "var(--primary)";
+            document.querySelector('.status-badge').style.borderColor = "rgba(16, 185, 129, 0.2)";
+
+            sensorData = data;
+            renderSensors();
+            updateTimestamp();
+        });
+</body >
+
+</html >
