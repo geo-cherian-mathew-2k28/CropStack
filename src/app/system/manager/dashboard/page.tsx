@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useLanguage } from '@/context/LanguageContext';
 import { Truck, ClipboardList, Search, Loader2, QrCode, ArrowRight, ShieldCheck, Warehouse, Thermometer, Droplets, Sprout, Wind, Activity } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 type OrderItem = {
     id: string;
