@@ -190,14 +190,26 @@ def sensor_loop():
         ts = datetime.now().isoformat()
         
         # Automation Logic: Maintain Temp & Humidity
-        old_fan = sensor_data["fan_status"]
-        if sensor_data["temperature"] > TEMP_THRESHOLD or sensor_data["humidity"] > HUMIDITY_THRESHOLD:
-            sensor_data["fan_status"] = "ON"
-        else:
-            sensor_data["fan_status"] = "OFF"
+        current_fan = control_state.get("fan", "OFF")
+        target_fan = "OFF"
+        
+        # Check Thresholds
+        if sensor_data.get("temperature", 0) > TEMP_THRESHOLD or sensor_data.get("humidity", 0) > HUMIDITY_THRESHOLD:
+            target_fan = "ON"
             
-        if old_fan != sensor_data["fan_status"]:
-            socketio.emit('sensor_update', sensor_data)
+            # Also Auto-Open Vent for Safety
+            if control_state.get("ventilation") != "OPEN":
+                 control_state["ventilation"] = "OPEN"
+                 socketio.emit('control_update', control_state)
+        
+        # Apply Fan Logic (State Change)
+        if current_fan != target_fan:
+            print(f"🤖 [AUTO] Toggling Fan {target_fan} (Temp: {sensor_data.get('temperature')} > {TEMP_THRESHOLD})")
+            control_state["fan"] = target_fan
+            socketio.emit('control_update', control_state)
+            
+        # Sync sensor_data status for display
+        sensor_data["fan_status"] = control_state["fan"]
 
         for key, val in sensor_data.items():
             sensor_history[key].append({"time": ts, "value": val})
