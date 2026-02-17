@@ -1,6 +1,54 @@
-# 🌾 CropStack - Enterprise Crop Storage Exchange
+# 🌾 CropStack - IoT Integrated Agricultural Marketplace
 
-CropStack is a modern, decentralized marketplace for crop storage and exchange, built with **Next.js 15**, **Supabase**, and **Framer Motion**. It connects Buyers, Sellers, and Organizers in a seamless agricultural ecosystem.
+CropStack is a professional-grade, IoT-integrated marketplace for crop storage and real-time environment monitoring. Built for the **IEDC Hackathon**, it features a real-time dashboard that syncs with physical hardware to ensure crop safety during storage.
+
+## 🌟 Hackathon Highlight: IoT Ecosystem
+This project features a complete **Hardware-to-Cloud-to-Web** pipeline:
+- **Hardware**: ESP32 + DHT11 + Servo Motor + LED.
+- **Real-Time Monitoring**: Temperature and Humidity tracking with **WebSocket (Socket.IO)** updates (no refreshing needed).
+- **Automated Control**: If humidity crosses the threshold, the system automatically triggers a **Servo-controlled ventilation** and a **Red LED alert**.
+- **Cloud Sync**: Data is streamed via Kafka/Cloud Relay to a live web dashboard.
+
+## 🚀 Quick Start
+
+### 1. Setup Web App
+```bash
+git clone https://github.com/geo-cherian-mathew-2k28/CropStack.git
+npm install
+npm run dev
+```
+
+### 2. Setup IoT API (Backend)
+```bash
+cd api
+pip install flask flask-cors flask-socketio eventlet python-socketio[client]
+python app.py
+```
+View the IoT Hub at [http://localhost:5000](http://localhost:5000)
+
+### 3. Setup ESP32
+1. Open `IEDC Hack/esp32_professional_v2/esp32_professional_v2.ino` in Arduino IDE.
+2. Install `ESP32Servo`, `DHT sensor library`, and `ArduinoJson`.
+3. Flash the code to your ESP32.
+
+---
+
+## 🏗️ Roles & Features
+- **Organizers (IoT Hub)**: Full control over sensor thresholds and warehouse safety.
+- **Sellers**: List crops and monitor storage health in their personal dashboard.
+- **Buyers**: Purchase crops with confidence knowing storage conditions are verified.
+
+## 🛠️ Tech Stack
+- **Frontend**: Next.js 15, Framer Motion, Lucide Icons.
+- **Backend**: Flask + Socket.IO (IoT Streamer).
+- **Database**: Supabase (PostgreSQL).
+- **Hardware**: ESP32, DHT11, SG90 Servo.
+
+---
+
+## 👨‍💻 Developer
+**Geo Cherian Mathew**
+IEDC Hackathon 2024
 
 ## 🚀 Quick Start (Setup for New Devices)
 
