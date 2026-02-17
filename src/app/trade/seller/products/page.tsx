@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Product } from '@/lib/supabase';
+import { Product } from '@/lib/types';
 import { db, collection, query, where, orderBy, getDocs, doc, updateDoc } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Edit, Trash2, ExternalLink, Loader2, Info, Package, MoreHorizontal, ArrowRight } from 'lucide-react';

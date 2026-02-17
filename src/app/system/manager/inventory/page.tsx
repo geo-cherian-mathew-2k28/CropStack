@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Product } from '@/lib/supabase';
+import { Product } from '@/lib/types';
 import { db, collection, query, orderBy, getDocs } from '@/lib/firebase';
 import { useLanguage } from '@/context/LanguageContext';
 import {

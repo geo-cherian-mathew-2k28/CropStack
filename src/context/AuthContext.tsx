@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Profile } from '@/lib/supabase';
+import { Profile } from '@/lib/types';
 import {
     auth,
     db,
