@@ -883,21 +883,112 @@
                 </div>
 
                 <!-- Manual Control Panel -->
-                <div class="control-panel"
-                    style="margin-top: 2rem; background: #fff; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                    <h3 style="margin-bottom: 1rem; color: #334155;">Testing Controls</h3>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                        <button onclick="toggleDevice('fan')" id="btn-fan"
-                            style="padding: 1rem; border: none; background: #e2e8f0; border-radius: 8px; font-weight: bold; cursor: pointer;">FAN:
-                            OFF</button>
-                        <button onclick="toggleDevice('light')" id="btn-light"
-                            style="padding: 1rem; border: none; background: #e2e8f0; border-radius: 8px; font-weight: bold; cursor: pointer;">LIGHT:
-                            OFF</button>
-                        <button onclick="toggleDevice('ventilation')" id="btn-vent"
-                            style="padding: 1rem; border: none; background: #e2e8f0; border-radius: 8px; font-weight: bold; cursor: pointer;">VENT:
-                            CLOSED</button>
+                <div class="control-panel card"
+                    style="margin-top: 2rem; padding: 2rem; border: 1px solid var(--border);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">Equipment Control</h3>
+                        <span class="badge badge-live">● MANUAL OVERRIDE</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+                        <!-- Fan Control -->
+                        <button onclick="toggleDevice('fan')" id="btn-fan" class="control-btn off">
+                            <div class="icon-box"><i data-lucide="wind"></i></div>
+                            <div class="btn-text">
+                                <span class="label">Exhaust Fan</span>
+                                <span class="state">OFF</span>
+                            </div>
+                        </button>
+
+                        <!-- Light Control -->
+                        <button onclick="toggleDevice('light')" id="btn-light" class="control-btn off">
+                            <div class="icon-box"><i data-lucide="lightbulb"></i></div>
+                            <div class="btn-text">
+                                <span class="label">Grow Lights</span>
+                                <span class="state">OFF</span>
+                            </div>
+                        </button>
+
+                        <!-- Ventilation Control -->
+                        <button onclick="toggleDevice('ventilation')" id="btn-vent" class="control-btn off">
+                            <div class="icon-box"><i data-lucide="door-open"></i></div>
+                            <div class="btn-text">
+                                <span class="label">Ventilation</span>
+                                <span class="state">CLOSED</span>
+                            </div>
+                        </button>
                     </div>
                 </div>
+
+                <style>
+                    .control-btn {
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                        padding: 1.25rem;
+                        border-radius: 16px;
+                        border: 1px solid var(--border);
+                        background: var(--bg-surface);
+                        cursor: pointer;
+                        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                        width: 100%;
+                        text-align: left;
+                    }
+
+                    .control-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+                        border-color: var(--primary);
+                    }
+
+                    .control-btn .icon-box {
+                        width: 48px;
+                        height: 48px;
+                        border-radius: 12px;
+                        background: var(--bg-input);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: var(--text-muted);
+                        transition: all 0.2s;
+                    }
+
+                    .control-btn .btn-text {
+                        display: flex;
+                        flex-direction: column;
+                    }
+
+                    .control-btn .label {
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        color: var(--text-soft);
+                    }
+
+                    .control-btn .state {
+                        font-size: 1rem;
+                        font-weight: 800;
+                        color: var(--text-main);
+                    }
+
+                    /* Active State */
+                    .control-btn.on {
+                        background: var(--bg-card);
+                        /* Keep dark/light theme neutral or active color key */
+                        border-color: var(--primary);
+                        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+                    }
+
+                    .control-btn.on .icon-box {
+                        background: var(--primary);
+                        color: white;
+                        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+                    }
+
+                    .control-btn.on .state {
+                        color: var(--primary);
+                    }
+                </style>
 
                 <div class="chart-container">
                     <div class="card stat-section" id="buyerStatsCard">
@@ -1039,9 +1130,24 @@
         function updateBtn(device, state) {
             controls[device] = state;
             const btn = document.getElementById(device === 'ventilation' ? 'btn-vent' : 'btn-' + device);
-            btn.innerText = device.toUpperCase() + ': ' + state;
-            btn.style.background = (state === 'ON' || state === 'OPEN') ? '#dcfce7' : '#e2e8f0';
-            btn.style.color = (state === 'ON' || state === 'OPEN') ? '#166534' : '#1e293b';
+            if (!btn) return;
+
+            // Clean state string (handle potential extra spaces)
+            const cleanState = state ? state.trim().toUpperCase() : 'OFF';
+            const isOn = (cleanState === 'ON' || cleanState === 'OPEN');
+
+            // Update Class
+            if (isOn) {
+                btn.classList.add('on');
+                btn.classList.remove('off');
+            } else {
+                btn.classList.add('off');
+                btn.classList.remove('on');
+            }
+
+            // Update Text
+            const stateSpan = btn.querySelector('.state');
+            if (stateSpan) stateSpan.innerText = cleanState;
         }
 
         socket.on('control_update', (data) => {
