@@ -47,36 +47,62 @@ sensor_data = {
 # ... (omitted sensor_data content)
 
 # Record sensor history periodically and run automation
+# Record sensor history periodically and run automation
 def sensor_loop():
     while True:
-        ts = datetime.now().isoformat()  # Define TS here
+        ts = datetime.now().isoformat()
         
         # Sync Manual Mode Status
         sensor_data["manual_mode"] = manual_mode
         
-        # Automation Logic: Maintain Temp & Humidity
-        # ONLY RUN IF MANUAL MODE IS OFF
+        # Automation Logic
         if not manual_mode:
-            current_fan = control_state.get("fan", "OFF")
+            temp = sensor_data.get("temperature", 0)
+            hum = sensor_data.get("humidity", 0)
+            
+            # Default State (SAFE)
+            new_mode = "SAFE"
             target_fan = "OFF"
+            target_light = "OFF"
+            target_vent = "CLOSED"
             
-            # Check Thresholds
-            if sensor_data.get("temperature", 0) > TEMP_THRESHOLD or sensor_data.get("humidity", 0) > HUMIDITY_THRESHOLD:
-                target_fan = "ON"
-                
-                # Also Auto-Open Vent for Safety
-                if control_state.get("ventilation") != "OPEN":
-                     control_state["ventilation"] = "OPEN"
-                     socketio.emit('control_update', control_state)
+            # Logic: Temp > 30 (Priority)
+            if temp > 30.0:
+                new_mode = "COOLING"
+                target_fan = "ON"     # Fast Continuous Stepper
+                target_vent = "OPEN"  # Servo 90
+                target_light = "OFF"
             
-            # Apply Fan Logic (State Change)
-            if current_fan != target_fan:
-                print(f"🤖 [AUTO] Toggling Fan {target_fan} (Temp: {sensor_data.get('temperature')} > {TEMP_THRESHOLD})")
-                control_state["fan"] = target_fan
+            # Logic: Humidity > 65 (Secondary)
+            elif hum > 65.0:
+                new_mode = "DRYING"
+                target_fan = "OFF"
+                target_vent = "CLOSED"# Servo 0
+                target_light = "ON"   # LED ON
+            
+            # Apply Changes
+            updated = False
+            if control_state.get("fan") != target_fan:
+                control_state["fan"] = target_fan; updated = True
+            if control_state.get("light") != target_light:
+                control_state["light"] = target_light; updated = True
+            if control_state.get("ventilation") != target_vent:
+                control_state["ventilation"] = target_vent; updated = True
+            
+            current_sys = sensor_data.get("system_status")
+            if current_sys != new_mode:
+                sensor_data["system_status"] = new_mode
+                updated = True
+            
+            if updated:
+                print(f"🤖 [AUTO] {new_mode}: Fan={target_fan}, Light={target_light}, Vent={target_vent}")
                 socketio.emit('control_update', control_state)
-            
+                socketio.emit('sensor_update', sensor_data)
+        
         # Sync sensor_data status for display
-        sensor_data["fan_status"] = control_state["fan"]
+        sensor_data["fan_status"] = control_state.get("fan", "OFF")
+        sensor_data["light_status"] = control_state.get("light", "OFF")
+        sensor_data["ventilation"] = control_state.get("ventilation", "CLOSED")
 
         for key, val in sensor_data.items():
             if key not in sensor_history: continue

@@ -889,15 +889,16 @@
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">Equipment Control</h3>
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-soft);">MANUAL
+                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-soft);">AUTOMATIC
                                 MODE</span>
                             <label class="switch">
-                                <input type="checkbox" id="manualToggle" onchange="toggleManualMode(this.checked)">
+                                <input type="checkbox" id="autoToggle" checked onchange="toggleAutoMode(this.checked)">
                                 <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
 
+                    <!-- Hidden when Auto is ON -->
                     <div id="manualControls" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
                         <!-- Fan Control -->
                         <button onclick="toggleDevice('fan')" id="btn-fan" class="control-btn off">
@@ -1274,11 +1275,13 @@
                 const isPulse = key.includes('pulse');
                 let displayHtml = '';
                 if (isStatus || key === 'ventilation') {
-                    let color = 'var(--primary)';
-                    if (value === 'WARNING' || value === 'OFF') color = 'var(--error)';
-                    if (value === 'SAFE' || value === 'ON') color = 'var(--primary)';
-                    if (value === 'OPEN') color = 'var(--warning)';
-                    if (value === 'CLOSED') color = '#94a3b8';
+                    let color = '#3b82f6'; // Default Blue
+                    if (value === 'SAFE') color = 'var(--success)';
+                    if (value === 'WARNING') color = 'var(--error)';
+                    if (value === 'COOLING') color = '#0ea5e9'; // Sky Blue
+                    if (value === 'DRYING') color = '#eab308'; // Yellow/Orange
+                    if (value === 'OPEN') color = '#eab308'; // Open Vent
+                    if (value === 'CLOSED') color = '#94a3b8'; // Closed Vent
 
                     displayHtml = `<div class="sensor-value"><span style="color: ${color}">${value}</span></div>`;
                 } else if (isPulse) {
@@ -1315,6 +1318,11 @@
 
 
         // ── Render Market ──
+        function toggleAutoMode(isAuto) {
+            const manualMode = !isAuto;
+            document.getElementById('manualControls').style.display = manualMode ? 'grid' : 'none';
+            socket.emit('set_manual_mode', { enabled: manualMode });
+        }
         function renderMarket() {
             const tbody = document.getElementById('marketBody');
             tbody.innerHTML = '';
