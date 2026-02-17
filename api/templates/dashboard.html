@@ -805,24 +805,76 @@
                     <span class="badge badge-live">● LIVE</span>
                 </div>
 
-                <div class="bulk-actions">
+                <div class="card"
+                    style="margin-bottom: 2rem; padding: 1.5rem; background: var(--bg-surface); border: 1px solid var(--border);">
                     <div
-                        style="display: flex; align-items: center; gap: 1rem; background: var(--bg-surface); padding: 0.75rem 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
-                        <span
-                            style="font-size: 0.8rem; font-weight: 800; color: var(--text-soft); text-transform: uppercase;">Automation
-                            Thresholds</span>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <label style="font-size: 0.75rem; color: var(--text-muted);">Temp > </label>
-                            <input type="number" id="threshold-temp" value="30.0" step="0.5"
-                                style="width: 60px; background: var(--bg-input); border: 1px solid var(--border); color: white; border-radius: 4px; padding: 2px 5px;">
+                        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <span style="font-size: 0.9rem; font-weight: 800; color: var(--text-main);">LOGIC
+                                THRESHOLDS:</span>
+                            <div
+                                style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-body); padding: 0.25rem 0.5rem; border-radius: 6px;">
+                                <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">MAX
+                                    TEMP</label>
+                                <input type="number" id="thresh-temp" class="sensor-input"
+                                    style="width: 50px; background: transparent; border: none; color: white; text-align: right;"
+                                    value="30.0">
+                                <span style="font-size: 0.75rem; color: var(--text-soft);">°C</span>
+                            </div>
+                            <div
+                                style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-body); padding: 0.25rem 0.5rem; border-radius: 6px;">
+                                <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">MAX
+                                    HUM</label>
+                                <input type="number" id="thresh-hum" class="sensor-input"
+                                    style="width: 50px; background: transparent; border: none; color: white; text-align: right;"
+                                    value="65.0">
+                                <span style="font-size: 0.75rem; color: var(--text-soft);">%</span>
+                            </div>
+                            <button class="action-btn primary" onclick="saveThresholds()"
+                                style="padding: 0.4rem 1rem; font-size: 0.8rem;">Save</button>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <label style="font-size: 0.75rem; color: var(--text-muted);">Humidity > </label>
-                            <input type="number" id="threshold-hum" value="70.0" step="0.5"
-                                style="width: 60px; background: var(--bg-input); border: 1px solid var(--border); color: white; border-radius: 4px; padding: 2px 5px;">
+
+                        <div
+                            style="display: flex; align-items: center; gap: 1rem; background: var(--bg-body); padding: 0.5rem 1rem; border-radius: 8px;">
+                            <span
+                                style="font-size: 0.8rem; font-weight: 700; color: var(--text-soft); letter-spacing: 0.05em;"
+                                id="modeLabel">AUTOMATIC MODE</span>
+                            <label class="switch">
+                                <input type="checkbox" id="autoToggle" checked onchange="toggleAutoMode(this.checked)">
+                                <span class="slider round"></span>
+                            </label>
                         </div>
-                        <button class="action-btn primary" onclick="updateThresholds()"
-                            style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">Update</button>
+                    </div>
+
+                    <!-- Manual Controls (Initially Hidden) -->
+                    <div id="manualControls"
+                        style="display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                        <!-- Fan Control -->
+                        <button onclick="toggleDevice('fan')" id="btn-fan" class="control-btn off">
+                            <div class="icon-box"><i data-lucide="wind"></i></div>
+                            <div class="btn-text">
+                                <span class="label">Exhaust Fan</span>
+                                <span class="state">OFF</span>
+                            </div>
+                        </button>
+
+                        <!-- Light Control -->
+                        <button onclick="toggleDevice('light')" id="btn-light" class="control-btn off">
+                            <div class="icon-box"><i data-lucide="lightbulb"></i></div>
+                            <div class="btn-text">
+                                <span class="label">Grow Lights</span>
+                                <span class="state">OFF</span>
+                            </div>
+                        </button>
+
+                        <!-- Ventilation Control -->
+                        <button onclick="toggleDevice('ventilation')" id="btn-vent" class="control-btn off">
+                            <div class="icon-box"><i data-lucide="door-open"></i></div>
+                            <div class="btn-text">
+                                <span class="label">Ventilation</span>
+                                <span class="state">CLOSED</span>
+                            </div>
+                        </button>
                     </div>
                 </div>
 
@@ -882,52 +934,7 @@
                     <p id="sys-status">Checking...</p>
                 </div>
 
-                <!-- Manual Control Panel -->
-                <div class="control-panel card"
-                    style="margin-top: 2rem; padding: 2rem; border: 1px solid var(--border);">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">Equipment Control</h3>
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-soft);">AUTOMATIC
-                                MODE</span>
-                            <label class="switch">
-                                <input type="checkbox" id="autoToggle" checked onchange="toggleAutoMode(this.checked)">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Hidden when Auto is ON -->
-                    <div id="manualControls" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
-                        <!-- Fan Control -->
-                        <button onclick="toggleDevice('fan')" id="btn-fan" class="control-btn off">
-                            <div class="icon-box"><i data-lucide="wind"></i></div>
-                            <div class="btn-text">
-                                <span class="label">Exhaust Fan</span>
-                                <span class="state">OFF</span>
-                            </div>
-                        </button>
-
-                        <!-- Light Control -->
-                        <button onclick="toggleDevice('light')" id="btn-light" class="control-btn off">
-                            <div class="icon-box"><i data-lucide="lightbulb"></i></div>
-                            <div class="btn-text">
-                                <span class="label">Grow Lights</span>
-                                <span class="state">OFF</span>
-                            </div>
-                        </button>
-
-                        <!-- Ventilation Control -->
-                        <button onclick="toggleDevice('ventilation')" id="btn-vent" class="control-btn off">
-                            <div class="icon-box"><i data-lucide="door-open"></i></div>
-                            <div class="btn-text">
-                                <span class="label">Ventilation</span>
-                                <span class="state">CLOSED</span>
-                            </div>
-                        </button>
-                    </div>
-                </div>
+                <!-- Manual Control Panel Moved to Sensors Tab -->
 
                 <style>
                     .control-btn {
@@ -1158,6 +1165,7 @@
         socket.on('connect', () => {
             console.log("Connected to local Socket.IO server");
             fetchAll();
+            fetchThresholds();
         });
 
         // Control State
@@ -1213,6 +1221,12 @@
             sensorData = data;
             renderSensors();
             updateTimestamp();
+        });
+
+        socket.on('threshold_update', (data) => {
+            if (data.temperature) document.getElementById('thresh-temp').value = data.temperature;
+            if (data.humidity) document.getElementById('thresh-hum').value = data.humidity;
+            showToast('Thresholds Synced');
         });
 
         // ── Toast ──
@@ -1305,12 +1319,6 @@
                         <span class="sensor-label">${label}</span>
                     </div>
                     ${displayHtml}
-                    ${(!isStatus && !isPulse) ? `
-                    <div class="sensor-input-row">
-                        <input type="number" class="sensor-input" id="input-${key}" value="${value}" step="0.1">
-                        <button class="sensor-btn" onclick="updateSensor('${key}')">Set</button>
-                    </div>
-                    ` : `<div style="font-size: 0.75rem; color: var(--text-soft); font-weight: 700;">${isPulse ? 'HARDWARE SYNC' : 'AUTOMATED CONTROL'}</div>`}
                 `;
             });
             lucide.createIcons();
@@ -1318,11 +1326,41 @@
 
 
         // ── Render Market ──
+        // ── Auto Mode & Thresholds ──
         function toggleAutoMode(isAuto) {
             const manualMode = !isAuto;
             document.getElementById('manualControls').style.display = manualMode ? 'grid' : 'none';
+
+            const label = document.getElementById('modeLabel');
+            if (label) label.textContent = isAuto ? "AUTOMATIC MODE" : "MANUAL CONTROL";
+
             socket.emit('set_manual_mode', { enabled: manualMode });
         }
+
+        function saveThresholds() {
+            const t = parseFloat(document.getElementById('thresh-temp').value);
+            const h = parseFloat(document.getElementById('thresh-hum').value);
+
+            fetch('/api/thresholds', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ temperature: t, humidity: h })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    showToast('Thresholds Updated: ' + t + '°C / ' + h + '%');
+                });
+        }
+
+        async function fetchThresholds() {
+            try {
+                const res = await fetch('/api/thresholds');
+                const data = await res.json();
+                if (data.temperature) document.getElementById('thresh-temp').value = data.temperature;
+                if (data.humidity) document.getElementById('thresh-hum').value = data.humidity;
+            } catch (e) { console.error(e); }
+        }
+
         function renderMarket() {
             const tbody = document.getElementById('marketBody');
             tbody.innerHTML = '';
@@ -1347,14 +1385,14 @@
 
             // Network stats
             const nsCard = document.getElementById('networkStatsCard');
-            nsCard.innerHTML = `<h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Network Stats</h3>`;
+            nsCard.innerHTML = `< h3 style = "font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;" > Network Stats</h3 > `;
             for (const [key, val] of Object.entries(networkStats)) {
                 const row = document.createElement('div');
                 row.className = 'stat-row';
                 row.innerHTML = `
-            <span class="stat-key">${key.replace(/_/g, ' ')}</span>
-            <input class="stat-input" style="width: 100px;" value="${val}" onchange="networkStats['${key}']= isNaN(parseFloat(this.value)) ? this.value : parseFloat(this.value)">
-        `;
+            < span class="stat-key" > ${key.replace(/_/g, ' ')}</span >
+                <input class="stat-input" style="width: 100px;" value="${val}" onchange="networkStats['${key}']= isNaN(parseFloat(this.value)) ? this.value : parseFloat(this.value)">
+                    `;
                 nsCard.appendChild(row);
             }
 
@@ -1365,14 +1403,14 @@
                 const row = document.createElement('div');
                 row.style.marginBottom = '1rem';
                 row.innerHTML = `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.375rem;">
-                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">${h.name}</span>
-                <input class="stat-input" style="width: 60px; text-align: center;" value="${h.value}" onchange="clusterHealth[${i}].value=parseInt(this.value)">
-            </div>
-            <div style="height: 6px; background: rgba(148,163,184,0.1); border-radius: 10px; overflow: hidden;">
-                <div style="height: 100%; width: ${h.value}%; background: ${h.color}; transition: width 0.3s;"></div>
-            </div>
-        `;
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.375rem;">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">${h.name}</span>
+                        <input class="stat-input" style="width: 60px; text-align: center;" value="${h.value}" onchange="clusterHealth[${i}].value=parseInt(this.value)">
+                    </div>
+                    <div style="height: 6px; background: rgba(148,163,184,0.1); border-radius: 10px; overflow: hidden;">
+                        <div style="height: 100%; width: ${h.value}%; background: ${h.color}; transition: width 0.3s;"></div>
+                    </div>
+                    `;
                 chCard.appendChild(row);
             });
         }
@@ -1387,24 +1425,24 @@
         function renderStatCard(containerId, icon, title, stats, saveFn) {
             const card = document.getElementById(containerId);
             card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <i data-lucide="${icon}" style="color: var(--primary); width: 22px; height: 22px;"></i>
-                <h3 style="margin-bottom: 0;">${title}</h3>
-            </div>
-            <button class="save-btn" onclick="${saveFn}()">Save</button>
-        </div>
-    `;
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i data-lucide="${icon}" style="color: var(--primary); width: 22px; height: 22px;"></i>
+                            <h3 style="margin-bottom: 0;">${title}</h3>
+                        </div>
+                        <button class="save-btn" onclick="${saveFn}()">Save</button>
+                    </div>
+                    `;
 
             for (const [key, val] of Object.entries(stats)) {
                 const row = document.createElement('div');
                 row.className = 'stat-row';
                 row.innerHTML = `
-            <span class="stat-key">${key.replace(/_/g, ' ')}</span>
-            <div class="stat-value-edit">
-                <input class="stat-input" id="${containerId}-${key}" value="${val}" onchange="this.dataset.dirty='true'">
-            </div>
-        `;
+                    <span class="stat-key">${key.replace(/_/g, ' ')}</span>
+                    <div class="stat-value-edit">
+                        <input class="stat-input" id="${containerId}-${key}" value="${val}" onchange="this.dataset.dirty='true'">
+                    </div>
+                    `;
                 card.appendChild(row);
             }
         }
@@ -1416,12 +1454,12 @@
             ordersData.forEach(o => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-            <td><span class="pin-badge">${o.pickup_code}</span></td>
-            <td style="font-weight: 700; color: var(--text-main);">${o.buyer_name}</td>
-            <td>${o.product_name}</td>
-            <td style="font-family: 'JetBrains Mono'; font-weight: 700;">₹${o.total_price.toLocaleString()}</td>
-            <td><span class="status-pill status-${o.status}">${o.status}</span></td>
-        `;
+                    <td><span class="pin-badge">${o.pickup_code}</span></td>
+                    <td style="font-weight: 700; color: var(--text-main);">${o.buyer_name}</td>
+                    <td>${o.product_name}</td>
+                    <td style="font-family: 'JetBrains Mono'; font-weight: 700;">₹${o.total_price.toLocaleString()}</td>
+                    <td><span class="status-pill status-${o.status}">${o.status}</span></td>
+                    `;
                 tbody.appendChild(tr);
             });
 
@@ -1431,11 +1469,11 @@
                 const tr = document.createElement('tr');
                 const date = new Date(t.created_at);
                 tr.innerHTML = `
-            <td style="font-family: 'JetBrains Mono'; font-size: 0.8rem;">${t.order_id.substring(0, 12)}</td>
-            <td style="font-family: 'JetBrains Mono'; font-weight: 700;">₹${t.amount.toLocaleString()}</td>
-            <td><span class="status-pill status-${t.status}">${t.status}</span></td>
-            <td style="font-size: 0.8rem;">${date.toLocaleDateString()}</td>
-        `;
+                    <td style="font-family: 'JetBrains Mono'; font-size: 0.8rem;">${t.order_id.substring(0, 12)}</td>
+                    <td style="font-family: 'JetBrains Mono'; font-weight: 700;">₹${t.amount.toLocaleString()}</td>
+                    <td><span class="status-pill status-${t.status}">${t.status}</span></td>
+                    <td style="font-size: 0.8rem;">${date.toLocaleDateString()}</td>
+                    `;
                 txnBody.appendChild(tr);
             });
         }

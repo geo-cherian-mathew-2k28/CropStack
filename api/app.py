@@ -25,6 +25,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 # ─────────────────────────────────────────────
 
 manual_mode = False  # Global Manual Override Flag
+thresholds = {"temperature": 30.0, "humidity": 65.0}
 
 sensor_data = {
     "temperature": 0.0,
@@ -60,21 +61,25 @@ def sensor_loop():
             temp = sensor_data.get("temperature", 0)
             hum = sensor_data.get("humidity", 0)
             
+            # Dynamic Thresholds
+            max_temp = thresholds.get("temperature", 30.0)
+            max_hum = thresholds.get("humidity", 65.0)
+            
             # Default State (SAFE)
             new_mode = "SAFE"
             target_fan = "OFF"
             target_light = "OFF"
             target_vent = "CLOSED"
             
-            # Logic: Temp > 30 (Priority)
-            if temp > 30.0:
+            # Logic: Temp > Max (Priority)
+            if temp > max_temp:
                 new_mode = "COOLING"
                 target_fan = "ON"     # Fast Continuous Stepper
                 target_vent = "OPEN"  # Servo 90
                 target_light = "OFF"
             
-            # Logic: Humidity > 65 (Secondary)
-            elif hum > 65.0:
+            # Logic: Humidity > Max (Secondary)
+            elif hum > max_hum:
                 new_mode = "DRYING"
                 target_fan = "OFF"
                 target_vent = "CLOSED"# Servo 0
@@ -95,7 +100,7 @@ def sensor_loop():
                 updated = True
             
             if updated:
-                print(f"🤖 [AUTO] {new_mode}: Fan={target_fan}, Light={target_light}, Vent={target_vent}")
+                print(f"🤖 [AUTO] {new_mode}: Fan={target_fan}, Light={target_light}")
                 socketio.emit('control_update', control_state)
                 socketio.emit('sensor_update', sensor_data)
         
@@ -123,6 +128,16 @@ def handle_manual_mode(data):
     manual_mode = data.get('enabled', False)
     # Broadcast to all clients specifically
     socketio.emit('manual_mode_update', manual_mode)
+
+@app.route('/api/thresholds', methods=['GET', 'POST'])
+def handle_thresholds():
+    if request.method == 'POST':
+        data = request.json
+        thresholds["temperature"] = float(data.get("temperature", thresholds["temperature"]))
+        thresholds["humidity"] = float(data.get("humidity", thresholds["humidity"]))
+        socketio.emit('threshold_update', thresholds)
+        return jsonify({"status": "success", "thresholds": thresholds})
+    return jsonify(thresholds)
 
 
 # Automation Thresholds
