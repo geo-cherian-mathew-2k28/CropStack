@@ -164,8 +164,7 @@ def handle_thresholds():
 
 
 # Automation Thresholds
-TEMP_THRESHOLD = 30.0
-HUMIDITY_THRESHOLD = 70.0
+# Thresholds handled globally
 
 
 sensor_history = {key: [] for key in sensor_data}
@@ -702,17 +701,7 @@ def health():
     })
 
 
-@app.route('/api/thresholds', methods=['POST'])
-def update_thresholds():
-    global TEMP_THRESHOLD, HUMIDITY_THRESHOLD
-    data = request.json
-    if not data:
-        return jsonify({"error": "No data"}), 400
-    if "temp" in data:
-        TEMP_THRESHOLD = float(data["temp"])
-    if "humidity" in data:
-        HUMIDITY_THRESHOLD = float(data["humidity"])
-    return jsonify({"status": "success", "thresholds": {"temp": TEMP_THRESHOLD, "humidity": HUMIDITY_THRESHOLD}})
+# Duplicate route removed
 
 if __name__ == '__main__':
     print("\n" + "="*60)
