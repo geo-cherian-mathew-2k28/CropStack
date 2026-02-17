@@ -967,7 +967,14 @@
 
     <script>
         const API = '';
-        let sensorData = {};
+        let sensorData = {
+            temperature: '--',
+            humidity: '--',
+            system_status: 'Initializing...',
+            ventilation: 'Checking...',
+            fan_status: '--',
+            last_pulse: 'Waiting...'
+        };
         let marketData = [];
         let networkStats = {};
         let clusterHealth = [];
@@ -1377,6 +1384,7 @@
         }
 
         // ── Auto-Refresh ──
+        renderSensors(); // Show placeholders immediately
         fetchAll();
         // ── Offline Detection ──
         let lastPacketTime = Date.now();
