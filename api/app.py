@@ -24,8 +24,30 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 #  IN-MEMORY DATA STORE
 # ─────────────────────────────────────────────
 
+import json
+import os
+
+THRESHOLDS_FILE = 'thresholds.json'
+
+def load_thresholds():
+    default = {"temperature": 30.0, "humidity": 65.0}
+    if os.path.exists(THRESHOLDS_FILE):
+        try:
+            with open(THRESHOLDS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return default
+
+def save_thresholds_to_file(t):
+    try:
+        with open(THRESHOLDS_FILE, 'w') as f:
+            json.dump(t, f)
+    except:
+        pass
+
 manual_mode = False  # Global Manual Override Flag
-thresholds = {"temperature": 30.0, "humidity": 65.0}
+thresholds = load_thresholds()
 
 sensor_data = {
     "temperature": 0.0,
@@ -135,6 +157,7 @@ def handle_thresholds():
         data = request.json
         thresholds["temperature"] = float(data.get("temperature", thresholds["temperature"]))
         thresholds["humidity"] = float(data.get("humidity", thresholds["humidity"]))
+        save_thresholds_to_file(thresholds)
         socketio.emit('threshold_update', thresholds)
         return jsonify({"status": "success", "thresholds": thresholds})
     return jsonify(thresholds)

@@ -915,10 +915,7 @@
                     </div>
 
                     <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-                        <div class="card" id="networkStatsCard" style="padding: 2rem;">
-                            <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Network Stats</h3>
-                            <!-- Populated by JS -->
-                        </div>
+                        <!-- Network Stats Removed -->
                         <div class="card" id="clusterHealthCard" style="padding: 2rem;">
                             <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Cluster Health</h3>
                             <!-- Populated by JS -->
@@ -975,6 +972,44 @@
 
                     .stat-row {
                         padding: 0.85rem 0;
+                    }
+
+                    .stat-card {
+                        padding: 1.5rem;
+                        border-radius: 16px;
+                        border: 1px solid var(--border);
+                        transition: all 0.3s;
+                    }
+
+                    .stat-card h3 {
+                        margin-bottom: 0.5rem;
+                        font-size: 0.8rem;
+                        text-transform: uppercase;
+                        letter-spacing: 0.1em;
+                        opacity: 0.8;
+                    }
+
+                    .stat-card p {
+                        font-size: 1.25rem;
+                        font-weight: 800;
+                    }
+
+                    .stat-card.safe {
+                        background: rgba(16, 185, 129, 0.05);
+                        border-color: rgba(16, 185, 129, 0.3);
+                        color: var(--primary);
+                    }
+
+                    .stat-card.cooling {
+                        background: rgba(6, 182, 212, 0.05);
+                        border-color: rgba(6, 182, 212, 0.3);
+                        color: var(--cyan);
+                    }
+
+                    .stat-card.warning {
+                        background: rgba(245, 158, 11, 0.05);
+                        border-color: rgba(245, 158, 11, 0.3);
+                        color: var(--warning);
                     }
 
                     .control-btn .icon-box {
@@ -1072,15 +1107,33 @@
                     }
                 </style>
 
-                <div class="chart-container">
-                    <div class="card stat-section" id="buyerStatsCard">
-                        <!-- Populated by JS -->
+                <div class="dashboard-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+                    <!-- Buyer Stats -->
+                    <div class="card" style="padding: 1.5rem;">
+                        <h3
+                            style="font-size: 1rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+                            <i data-lucide="shopping-cart" style="color: var(--primary);"></i> Buyer Activity
+                        </h3>
+                        <div id="statList-buyer"></div>
                     </div>
-                    <div class="card stat-section" id="sellerStatsCard">
-                        <!-- Populated by JS -->
+
+                    <!-- Seller Stats -->
+                    <div class="card" style="padding: 1.5rem;">
+                        <h3
+                            style="font-size: 1rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+                            <i data-lucide="store" style="color: #f59e0b;"></i> Seller Performance
+                        </h3>
+                        <div id="statList-seller"></div>
                     </div>
-                    <div class="card stat-section" id="organizerStatsCard">
-                        <!-- Populated by JS -->
+
+                    <!-- Organizer Stats -->
+                    <div class="card" style="padding: 1.5rem;">
+                        <h3
+                            style="font-size: 1rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+                            <i data-lucide="layers" style="color: #8b5cf6;"></i> Hub Operations
+                        </h3>
+                        <div id="statList-organizer"></div>
                     </div>
                 </div>
             </div>
@@ -1257,6 +1310,30 @@
             setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
+        // ── Keep Alive & Timestamp ──
+        function updateTimestamp() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const el = document.getElementById('lastUpdated');
+            if (el) el.textContent = timeStr;
+
+            // System Status Update
+            const sys = document.getElementById('sys-status');
+            if (sys && sensorData.system_status) {
+                const status = sensorData.system_status;
+                sys.textContent = status;
+
+                const card = sys.closest('.stat-card');
+                if (card && status) {
+                    card.classList.remove('safe', 'cooling', 'warning');
+                    if (status === 'SAFE') card.classList.add('safe');
+                    else if (status === 'COOLING') card.classList.add('cooling');
+                    else if (status === 'DRYING') card.classList.add('warning');
+                    else card.classList.add('warning');
+                }
+            }
+        }
+
         // ── Fetch All Data ──
         async function fetchAll() {
             try {
@@ -1403,18 +1480,7 @@
                 tbody.appendChild(tr);
             });
 
-            // Network stats
-            const nsCard = document.getElementById('networkStatsCard');
-            nsCard.innerHTML = `<h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Network Stats</h3>`;
-            for (const [key, val] of Object.entries(networkStats)) {
-                const row = document.createElement('div');
-                row.className = 'stat-row';
-                row.innerHTML = `
-            <span class="stat-key">${key.replace(/_/g, ' ')}</span>
-                <input class="stat-input" style="width: 100px;" value="${val}" onchange="networkStats['${key}']= isNaN(parseFloat(this.value)) ? this.value : parseFloat(this.value)">
-                    `;
-                nsCard.appendChild(row);
-            }
+            // Network stats removed
 
             // Cluster health
             const chCard = document.getElementById('clusterHealthCard');
@@ -1437,34 +1503,41 @@
 
         // ── Render Dashboard Stats ──
         function renderDashboardStats() {
-            renderStatCard('buyerStatsCard', 'shopping-cart', 'Buyer Dashboard', buyerStats, 'saveBuyerStats');
-            renderStatCard('sellerStatsCard', 'store', 'Seller Dashboard', sellerStats, 'saveSellerStats');
-            renderStatCard('organizerStatsCard', 'layers', 'Organizer Dashboard', organizerStats, 'saveOrganizerStats');
+            renderStatList('statList-buyer', buyerStats);
+            renderStatList('statList-seller', sellerStats);
+            renderStatList('statList-organizer', organizerStats);
         }
 
-        function renderStatCard(containerId, icon, title, stats, saveFn) {
-            const card = document.getElementById(containerId);
-            card.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <i data-lucide="${icon}" style="color: var(--primary); width: 22px; height: 22px;"></i>
-                            <h3 style="margin-bottom: 0;">${title}</h3>
-                        </div>
-                        <button class="save-btn" onclick="${saveFn}()">Save</button>
-                    </div>
-                    `;
+        function renderStatList(containerId, stats) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
 
-            for (const [key, val] of Object.entries(stats)) {
+            const entries = Object.entries(stats);
+            entries.forEach(([key, val], index) => {
                 const row = document.createElement('div');
-                row.className = 'stat-row';
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-between';
+                row.style.alignItems = 'center';
+                row.style.padding = '0.8rem 0';
+                if (index < entries.length - 1) {
+                    row.style.borderBottom = '1px solid var(--border)';
+                }
+
+                // Format specific keys
+                let displayVal = val;
+                if (typeof val === 'number') {
+                    if (key.includes('total') || key.includes('balance') || key.includes('yield') || key.includes('savings') || key.includes('volume')) {
+                        if (val > 1000) displayVal = '₹' + val.toLocaleString();
+                    }
+                }
+
                 row.innerHTML = `
-                    <span class="stat-key">${key.replace(/_/g, ' ')}</span>
-                    <div class="stat-value-edit">
-                        <input class="stat-input" id="${containerId}-${key}" value="${val}" onchange="this.dataset.dirty='true'">
-                    </div>
-                    `;
-                card.appendChild(row);
-            }
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">${key.replace(/_/g, ' ')}</span>
+                    <span style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${displayVal}</span>
+                `;
+                container.appendChild(row);
+            });
         }
 
         // ── Render Orders ──
