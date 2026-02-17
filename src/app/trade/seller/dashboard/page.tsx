@@ -5,79 +5,43 @@ import DashboardLayout from '@/components/DashboardLayout';
 import {
     Wallet,
     TrendingUp,
-    ArrowUpRight,
-    Clock,
-    ChevronRight,
     Database,
     Loader2,
     Thermometer,
-    Droplets,
-    Sprout,
-    Gauge,
-    Activity
+    Activity,
+    Power,
+    ShieldCheck,
+    BarChart3
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-type SellerStats = {
-    available_balance: number;
-    pending_payments: number;
-    monthly_yield: number;
-    monthly_growth: number;
-    silo_efficiency: number;
-    node_sync: number;
-    silo_utilization: number;
-};
-
-type TransactionItem = {
-    id: string;
-    order_id: string;
-    amount: number;
-    status: string;
-    created_at: string;
-};
-
-type SensorData = {
-    temperature: number;
-    humidity: number;
-    fan_status?: string;
-    last_pulse?: string;
-    soil_moisture: number;
-    light_intensity: number;
-    ph_level: number;
-    wind_speed: number;
-    rainfall: number;
-    co2_level: number;
-    pressure: number;
-    uv_index: number;
-};
-
-
 export default function SellerDashboard() {
     const { t } = useLanguage();
-    const [stats, setStats] = useState<SellerStats | null>(null);
-    const [transactions, setTransactions] = useState<TransactionItem[]>([]);
-    const [sensors, setSensors] = useState<SensorData | null>(null);
+    const [farmerData, setFarmerData] = useState<any>(null);
+    const [sensors, setSensors] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [autoSell, setAutoSell] = useState({ enabled: false, threshold: 0 });
 
     const fetchData = useCallback(async () => {
         try {
-            const [sellerRes, sensorRes] = await Promise.all([
-                fetch(`${API_BASE}/stats/seller`),
+            const [farmerRes, sensorRes] = await Promise.all([
+                fetch(`${API_BASE}/farmer/farmer-101`),
                 fetch(`${API_BASE}/sensors`),
             ]);
 
-            if (!sellerRes.ok || !sensorRes.ok) throw new Error('API error');
+            if (!farmerRes.ok || !sensorRes.ok) throw new Error('API error');
+            const fData = await farmerRes.json();
+            const sData = await sensorRes.json();
 
-            const sellerData = await sellerRes.json();
-            const sensorData = await sensorRes.json();
-
-            setStats(sellerData.stats);
-            setTransactions(sellerData.transactions || []);
-            setSensors(sensorData.sensors);
+            setFarmerData(fData);
+            setSensors(sData.sensors);
+            setAutoSell({
+                enabled: fData.inventory.auto_sell_enabled,
+                threshold: fData.inventory.auto_sell_threshold
+            });
             setError(false);
         } catch (err) {
             console.error('Failed to fetch data:', err);
@@ -87,197 +51,157 @@ export default function SellerDashboard() {
         }
     }, []);
 
+    const toggleAutoSell = async () => {
+        const nextState = !autoSell.enabled;
+        setAutoSell(prev => ({ ...prev, enabled: nextState }));
+        await fetch(`${API_BASE}/farmer/farmer-101/auto-sell`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: nextState, threshold: autoSell.threshold })
+        });
+    };
+
     useEffect(() => {
         fetchData();
         const interval = setInterval(fetchData, 5000);
         return () => clearInterval(interval);
     }, [fetchData]);
 
-    const formatDate = (dateStr: string) => {
-        try {
-            return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-        } catch {
-            return dateStr;
-        }
-    };
+    if (loading) return (
+        <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Loader2 className="animate-spin" size={40} color="var(--primary)" />
+        </div>
+    );
+
+    if (!farmerData) return <div>Failed to load data.</div>;
+
+    const { inventory, loan_eligibility, market_price, profit_projection } = farmerData;
 
     return (
         <DashboardLayout role="seller">
-            <div style={{ marginBottom: '2.5rem' }}>
-                <h1 style={{ fontSize: '2rem', color: 'var(--secondary)', letterSpacing: '-0.03em' }}>{t('welcome')}</h1>
-                <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>
-                    {error ? '⚠️ Could not connect to sensors — showing saved data' : 'Here\'s how your sales are doing today.'}
-                </p>
+            <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--primary)', background: 'var(--primary-soft)', padding: '0.25rem 0.75rem', borderRadius: '100px' }}>SELLER CENTER</span>
+                        <div style={{ width: '6px', height: '6px', background: 'var(--success)', borderRadius: '50%' }}></div>
+                    </div>
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.05em' }}>Farmer <span style={{ color: 'var(--primary)' }}>Folio.</span></h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1rem', fontWeight: 500 }}>
+                        Managing inventory at <strong>{inventory.hub}</strong>
+                    </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-soft)', marginBottom: '0.5rem' }}>WAREHOUSE NODE</p>
+                    <div style={{ background: '#f8fafc', border: '1px solid var(--border)', padding: '0.5rem 1.25rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Database size={16} color="var(--secondary)" />
+                        <span style={{ fontWeight: 800 }}>{inventory.stored_at}</span>
+                    </div>
+                </div>
             </div>
 
-            {/* Sensor Strip */}
-            {sensors && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                    {[
-                        { label: 'Temperature', value: `${sensors.temperature.toFixed(1)}°C`, icon: Thermometer, color: sensors.temperature > 30 ? 'var(--error)' : 'var(--primary)' },
-                        { label: 'Humidity', value: `${sensors.humidity.toFixed(1)}%`, icon: Droplets, color: sensors.humidity > 70 ? 'var(--error)' : 'var(--primary)' },
-                        { label: 'Fan Control', value: sensors.fan_status || 'OFF', icon: Gauge, color: sensors.fan_status === 'ON' ? 'var(--success)' : 'var(--text-soft)' },
-                        { label: 'Soil Moisture', value: `${sensors.soil_moisture.toFixed(1)}%`, icon: Sprout, color: 'var(--warning)' },
-                        { label: 'Last Sync', value: sensors.last_pulse || 'Never', icon: Activity, color: sensors.last_pulse && sensors.last_pulse !== 'Never' ? 'var(--primary)' : 'var(--text-soft)' },
-                    ].map((s, i) => (
-                        <div key={i} style={{ padding: '0.875rem 1rem', background: '#f8fafc', border: '1px solid var(--border-soft)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <s.icon size={18} color={s.color} />
-                            <div>
-                                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{s.label}</p>
-                                <p style={{ fontSize: '1rem', fontWeight: 800, color: s.label === 'Fan Control' && s.value === 'ON' ? 'var(--success)' : 'var(--secondary)' }}>{s.value}</p>
-                            </div>
-                        </div>
-                    ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2.5rem' }}>
+                <div className="card-white" style={{ padding: '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                        <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase' }}>Stored Volume</p>
+                        <BarChart3 size={18} color="var(--primary)" />
+                    </div>
+                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900 }}>{inventory.quantity} <span style={{ fontSize: '1rem', color: 'var(--text-soft)' }}>qtl</span></h2>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', marginTop: '0.5rem' }}>{inventory.crop}</p>
                 </div>
-            )}
 
-
-            {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-                    <Loader2 size={32} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} />
+                <div className="card-white" style={{ padding: '2rem' }}>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', marginBottom: '1rem' }}>Market Price</p>
+                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900 }}>₹{market_price.toLocaleString()}</h2>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--success)', marginTop: '0.5rem' }}>Value: ₹{loan_eligibility.total_value.toLocaleString()}</p>
                 </div>
-            ) : stats && (
-                <>
-                    {/* Wallet Stats */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '2.5rem' }}>
-                        <div className="card-white" style={{ padding: '1.5rem', borderLeft: '4px solid var(--success)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{t('stats.available_balance')}</span>
-                                <Wallet size={18} color="var(--success)" />
-                            </div>
-                            <h2 style={{ fontSize: '1.875rem', fontWeight: 900, color: 'var(--secondary)', marginBottom: '0.25rem' }}>{t('currency_symbol')}{stats.available_balance.toFixed(2)}</h2>
-                            <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>Ready to withdraw</p>
-                        </div>
 
-                        <div className="card-white" style={{ padding: '1.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{t('stats.pending_payments')}</span>
-                                <Clock size={18} color="var(--warning)" />
-                            </div>
-                            <h2 style={{ fontSize: '1.875rem', fontWeight: 900, color: 'var(--secondary)', marginBottom: '0.25rem' }}>{t('currency_symbol')}{stats.pending_payments.toFixed(2)}</h2>
-                            <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-soft)' }}>Being processed</p>
-                        </div>
+                <div className="card-white" style={{ padding: '2rem', border: loan_eligibility.eligible ? '2px solid var(--primary)' : '1px solid var(--border)' }}>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', marginBottom: '1rem' }}>Loan Access</p>
+                    {inventory.loan_status !== 'none' ? (
+                        <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--primary)' }}>ACTIVE LOAN</h2>
+                    ) : (
+                        <h2 style={{ fontSize: '2rem', fontWeight: 900, color: loan_eligibility.eligible ? 'var(--primary)' : 'var(--text-soft)' }}>
+                            {loan_eligibility.eligible ? `₹50k+` : 'NOT ELIGIBLE'}
+                        </h2>
+                    )}
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-soft)', marginTop: '0.5rem' }}>
+                        {loan_eligibility.eligible ? 'Eligible for instant credit' : 'Requires value > ₹80,000'}
+                    </p>
+                </div>
 
-                        <div className="card-white" style={{ padding: '1.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{t('stats.monthly_sales')}</span>
-                                <TrendingUp size={18} color="var(--primary)" />
-                            </div>
-                            <h2 style={{ fontSize: '1.875rem', fontWeight: 900, color: 'var(--secondary)', marginBottom: '0.25rem' }}>{t('currency_symbol')}{stats.monthly_yield.toFixed(2)}</h2>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 800, color: 'var(--success)' }}>
-                                <ArrowUpRight size={14} /> +{stats.monthly_growth}%
-                            </div>
-                        </div>
+                <div className="card-white glass-dark" style={{ padding: '2rem', color: 'white' }}>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: '1rem' }}>Profit Gain</p>
+                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900, color: 'var(--primary)' }}>+₹{profit_projection.toLocaleString()}</h2>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.6 }}>Locked-in earnings</p>
+                </div>
+            </div>
 
-                        <div className="card-white" style={{ padding: '1.5rem', background: 'var(--primary)', color: 'white' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Storage Usage</span>
-                                <Database size={18} color="rgba(255,255,255,0.7)" />
-                            </div>
-                            <h2 style={{ fontSize: '1.875rem', fontWeight: 900, color: 'white', marginBottom: '0.25rem' }}>{stats.silo_efficiency}%</h2>
-                            <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>Well managed</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2.5rem' }}>
+                <div className="card-white" style={{ padding: '2.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                        <div>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 900 }}>Automation: Smart Sell</h3>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Auto-sell trigger when market hits your target.</p>
+                        </div>
+                        <div onClick={toggleAutoSell} style={{ width: '64px', height: '34px', background: autoSell.enabled ? 'var(--primary)' : '#e2e8f0', borderRadius: '100px', cursor: 'pointer', position: 'relative', transition: 'all 0.3s' }}>
+                            <div style={{ width: '26px', height: '26px', background: 'white', borderRadius: '50%', position: 'absolute', top: '4px', left: autoSell.enabled ? '34px' : '4px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}></div>
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
-                        {/* Transaction History */}
-                        <div className="card-white" style={{ padding: '2.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                        <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-soft)', textTransform: 'uppercase', marginBottom: '1rem' }}>Selling Threshold (₹)</label>
+                            <input
+                                type="number"
+                                className="input-modern"
+                                value={autoSell.threshold}
+                                onChange={(e) => setAutoSell(prev => ({ ...prev, threshold: parseInt(e.target.value) }))}
+                                style={{ fontSize: '1.75rem', fontWeight: 900, height: '64px' }}
+                            />
+                        </div>
+                        <div style={{ flex: 1, padding: '2rem', background: 'var(--bg-main)', borderRadius: '20px', border: '2px dashed var(--border)' }}>
+                            <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Execution Mode:</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <Power size={18} color={autoSell.enabled ? 'var(--primary)' : 'var(--text-soft)'} />
+                                <span style={{ fontWeight: 900, color: autoSell.enabled ? 'var(--primary)' : 'var(--text-soft)' }}>{autoSell.enabled ? 'LIVE MONITORING' : 'OFFLINE'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="card-white" style={{ padding: '2.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 900 }}>Device Feed</h3>
+                        <ShieldCheck size={20} color="var(--primary)" />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <Thermometer size={20} color="var(--primary)" />
                                 <div>
-                                    <h3 style={{ fontSize: '1.25rem' }}>Recent Payments</h3>
-                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Your latest sales and payment history</p>
+                                    <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-soft)' }}>TEMP</p>
+                                    <p style={{ fontWeight: 900, fontSize: '1.1rem' }}>{sensors?.temperature.toFixed(1)}°C</p>
                                 </div>
-                                <Link href="/trade/seller/products" className="btn-modern btn-secondary-modern" style={{ padding: '0.5rem 1rem', height: 'auto', fontSize: '0.8rem' }}>
-                                    View My Crops <ChevronRight size={14} />
-                                </Link>
                             </div>
-
-                            {transactions.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '5rem', background: 'var(--bg-main)', borderRadius: '16px', border: '1px dashed var(--border)' }}>
-                                    <Activity size={32} color="#94a3b8" style={{ marginBottom: '1rem' }} />
-                                    <p style={{ color: 'var(--text-soft)', fontSize: '0.9rem', fontWeight: 700 }}>No payments recorded yet.</p>
-                                </div>
-                            ) : (
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead>
-                                            <tr style={{ borderBottom: '2px solid var(--border-soft)' }}>
-                                                <th style={{ textAlign: 'left', padding: '1rem 0', color: 'var(--text-soft)', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Date</th>
-                                                <th style={{ textAlign: 'left', padding: '1rem 0', color: 'var(--text-soft)', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Order ID</th>
-                                                <th style={{ textAlign: 'left', padding: '1rem 0', color: 'var(--text-soft)', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Amount</th>
-                                                <th style={{ textAlign: 'left', padding: '1rem 0', color: 'var(--text-soft)', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {transactions.slice(0, 5).map((txn) => (
-                                                <tr key={txn.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
-                                                    <td style={{ padding: '1.25rem 0', fontSize: '0.925rem', fontWeight: 700 }}>{formatDate(txn.created_at)}</td>
-                                                    <td style={{ padding: '1.25rem 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>#{txn.order_id.slice(0, 6).toUpperCase()}</td>
-                                                    <td style={{ padding: '1.25rem 0', fontSize: '0.95rem', fontWeight: 900 }}>{t('currency_symbol')}{txn.amount.toFixed(2)}</td>
-                                                    <td style={{ padding: '1.25rem 0' }}>
-                                                        <span className={`badge-clean ${txn.status === 'cleared' ? 'badge-success' : 'badge-pending'}`}>
-                                                            {txn.status === 'cleared' ? 'Paid' : 'Pending'}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                    <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                                        <button className="btn-modern btn-secondary-modern" style={{ width: '100%', border: 'none', background: 'var(--bg-main)', fontSize: '0.85rem' }}>
-                                            Download Payment History (PDF)
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                            <div style={{ width: '40px', height: '4px', background: 'var(--border)', borderRadius: '10px' }}>
+                                <div style={{ height: '100%', width: '65%', background: 'var(--primary)', borderRadius: '10px' }}></div>
+                            </div>
                         </div>
 
-                        {/* Performance Hub */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <div className="card-white" style={{ padding: '2.5rem', background: 'var(--secondary)', color: 'white' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                    <h3 style={{ color: 'white', fontSize: '1.25rem' }}>Performance</h3>
-                                    <Link href="/market-intelligence" style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.8rem', textDecoration: 'none' }}>View Details <ArrowUpRight size={14} /></Link>
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 800, marginBottom: '0.75rem' }}>
-                                            <span style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>SYSTEM HEALTH</span>
-                                            <span style={{ color: 'var(--success)' }}>HEALTHY</span>
-                                        </div>
-                                        <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '100px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${stats.node_sync}%`, background: 'var(--success)', transition: 'width 0.5s ease' }}></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 800, marginBottom: '0.75rem' }}>
-                                            <span style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>STORAGE USED</span>
-                                            <span style={{ color: 'var(--warning)' }}>{stats.silo_utilization}%</span>
-                                        </div>
-                                        <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '100px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${stats.silo_utilization}%`, background: 'var(--warning)', transition: 'width 0.5s ease' }}></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button className="btn-modern" style={{ width: '100%', marginTop: '3rem', background: 'white', color: 'var(--secondary)', height: '52px', fontWeight: 800 }}>
-                                    View Full Report
-                                </button>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <div style={{ flex: 1, padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '16px', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-soft)', marginBottom: '0.25rem' }}>STATUS</p>
+                                <p style={{ fontWeight: 900, color: 'var(--primary)' }}>OPTIMAL</p>
                             </div>
-
-                            <div className="card-white" style={{ padding: '2.5rem' }}>
-                                <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Withdraw Money</h3>
-                                <div style={{ padding: '1.75rem', background: 'var(--bg-main)', borderRadius: '16px', border: '1.5px solid var(--border-soft)', textAlign: 'center', marginBottom: '1.5rem' }}>
-                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-soft)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '1px' }}>Available to Withdraw</p>
-                                    <h2 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{t('currency_symbol')}{stats.available_balance.toFixed(2)}</h2>
-                                </div>
-                                <button className="btn-modern btn-primary-modern" style={{ width: '100%', height: '52px' }} disabled={stats.available_balance === 0}>
-                                    Withdraw to Bank
-                                </button>
+                            <div style={{ flex: 1, padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '16px', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-soft)', marginBottom: '0.25rem' }}>SYNC</p>
+                                <p style={{ fontWeight: 900 }}>{sensors?.last_pulse || 'LIVE'}</p>
                             </div>
                         </div>
                     </div>
-                </>
-            )}
+                </div>
+            </div>
         </DashboardLayout>
     );
 }

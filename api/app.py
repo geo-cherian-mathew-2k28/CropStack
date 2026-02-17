@@ -67,49 +67,63 @@ sensor_data = {
     "manual_mode": False
 }
 
-# ... (omitted sensor_data content)
+# ─────────────────────────────────────────────
+#  PROFESSIONAL HUB & FARMER DATA ENGINE
+# ─────────────────────────────────────────────
+
+# Global state for Admin & Multi-Hub management
+hubs_registry = {}  # HubID -> Hub Details
+farmers_inventory = {
+    "farmer-101": {
+        "name": "Arjun Singh",
+        "hub": "North Zone Hub",
+        "crop": "Basmati Rice",
+        "quantity": 250,  # in quintals
+        "stored_at": "Silo A1",
+        "loan_status": "none",
+        "auto_sell_threshold": 4800.0,
+        "auto_sell_enabled": False
+    },
+    "farmer-202": {
+        "name": "Meera Bai",
+        "hub": "South Zone Hub",
+        "crop": "Red Wheat",
+        "quantity": 180,
+        "stored_at": "Silo B4",
+        "loan_status": "approved",
+        "loan_amount": 60000,
+        "auto_sell_threshold": 2200.0,
+        "auto_sell_enabled": True
+    }
+}
+
+def calculate_loan_eligibility(farmer_id):
+    """
+    Logic: Eligible for 50k if stored value >= 80k
+    Current Price of Basmati: ~4540
+    """
+    inventory = farmers_inventory.get(farmer_id)
+    if not inventory: return {"eligible": False, "min_amount": 0}
+    
+    # Simple lookup for demo; in production this targets live market prices
+    market_price = 4540.0 if inventory["crop"] == "Basmati Rice" else 2110.0
+    total_value = inventory["quantity"] * market_price
+    
+    eligible = total_value >= 80000
+    return {
+        "eligible": eligible,
+        "total_value": total_value,
+        "min_amount": 50000 if eligible else 0,
+        "max_amount": total_value * 0.6  # 60% of crop value
+    }
 
 # Record sensor history periodically and run automation
 # Record sensor history periodically and run automation
 def sensor_loop():
+    """Background loop to process automation and auto-sell logic."""
+    global sensor_data, thresholds
+    import random # Added for simulation
     while True:
-        ts = datetime.now().isoformat()
-        
-        # Sync Manual Mode Status
-        sensor_data["manual_mode"] = manual_mode
-        
-        # Automation Logic
-        if not manual_mode:
-            temp = sensor_data.get("temperature", 0)
-            hum = sensor_data.get("humidity", 0)
-            
-            # Dynamic Thresholds
-            max_temp = thresholds.get("temperature", 30.0)
-            max_hum = thresholds.get("humidity", 65.0)
-            
-            # Default State (SAFE)
-            new_mode = "SAFE"
-            target_fan = "OFF"
-            target_light = "OFF"
-            target_vent = "CLOSED"
-            
-            # Logic: Temp > Max (Priority)
-            if temp > max_temp:
-                new_mode = "COOLING"
-                target_fan = "ON"     # Fast Continuous Stepper
-                target_vent = "OPEN"  # Servo 90
-                target_light = "OFF"
-            
-            # Logic: Humidity > Max (Secondary)
-            elif hum > max_hum:
-                new_mode = "DRYING"
-                target_fan = "OFF"
-                target_vent = "CLOSED"# Servo 0
-                target_light = "ON"   # LED ON
-            
-            # Apply Changes
-            updated = False
-            if control_state.get("fan") != target_fan:
                 control_state["fan"] = target_fan; updated = True
             if control_state.get("light") != target_light:
                 control_state["light"] = target_light; updated = True
@@ -595,14 +609,61 @@ def update_buyer_stats():
             monthly_chart_data = data['chart_data']
     return jsonify({"stats": buyer_stats, "timestamp": datetime.now().isoformat()})
 
-@app.route('/api/stats/seller', methods=['GET'])
-def get_seller_stats():
-    """Get seller dashboard stats."""
+# ─────────────────────────────────────────────
+#  ADMIN & FARMER ENDPOINTS
+# ─────────────────────────────────────────────
+
+@app.route('/api/admin/data', methods=['GET'])
+def get_admin_data():
+    """Global data for Admin Dashboard."""
     return jsonify({
-        "stats": seller_stats,
-        "transactions": transactions_data,
-        "timestamp": datetime.now().isoformat()
+        "hubs": list(hubs_registry.values()),
+        "farmers": list(farmers_inventory.values()),
+        "total_revenue": sum(f.get("loan_amount", 0) for f in farmers_inventory.values()),
+        "system_health": "stable"
     })
+
+@app.route('/api/farmer/<farmer_id>', methods=['GET'])
+def get_farmer_data(farmer_id):
+    """Specific data for the Seller Dashboard."""
+    data = farmers_inventory.get(farmer_id)
+    if not data:
+        return jsonify({"error": "Farmer not found"}), 404
+        
+    eligibility = calculate_loan_eligibility(farmer_id)
+    return jsonify({
+        "inventory": data,
+        "market_price": 4540.0 if data["crop"] == "Basmati Rice" else 2110.0,
+        "loan_eligibility": eligibility,
+        "profit_projection": (data["quantity"] * 4540.0) - (data["quantity"] * 3800.0) # Mock profit calc
+    })
+
+@app.route('/api/farmer/<farmer_id>/auto-sell', methods=['POST'])
+def update_auto_sell(farmer_id):
+    """Enable/Disable auto-sell and set threshold."""
+    data = request.json
+    if farmer_id in farmers_inventory:
+        farmers_inventory[farmer_id]["auto_sell_enabled"] = data.get("enabled", False)
+        farmers_inventory[farmer_id]["auto_sell_threshold"] = float(data.get("threshold", 0))
+        return jsonify({"status": "updated"})
+    return jsonify({"error": "not found"}), 404
+
+@app.route('/api/admin/hubs', methods=['POST'])
+def crud_hubs():
+    """Admin Hub management."""
+    data = request.json
+    action = data.get("action")
+    hid = data.get("id")
+    
+    if action == "add":
+        hubs_registry[hid] = data.get("hub")
+    elif action == "delete":
+        hubs_registry.pop(hid, None)
+    elif action == "update":
+        if hid in hubs_registry:
+            hubs_registry[hid].update(data.get("hub"))
+            
+    return jsonify({"status": "success", "hubs": list(hubs_registry.values())})
 
 @app.route('/api/stats/seller', methods=['PUT'])
 def update_seller_stats():

@@ -1290,7 +1290,37 @@
             }
         }
 
-        // Fetch Hubs
+        // Fetch Global Admin Data
+        async function fetchAdminOverview() {
+            try {
+                const res = await fetch('/api/admin/data');
+                const data = await res.json();
+
+                // Update Hubs List from local Flask API if needed, 
+                // but we primarily use Firestore now.
+                console.log("Admin Data Sample:", data);
+            } catch (e) { console.error(e); }
+        }
+
+        // Expanded Hub Management with CRUD
+        async function deleteHub(docId) {
+            if (!confirm("Are you sure you want to delete this hub?")) return;
+            try {
+                await db.collection('hubs').doc(docId).delete();
+                showToast("Hub Deleted Successfully");
+            } catch (e) { showToast("Error: " + e.message); }
+        }
+
+        async function editHub(docId, currentData) {
+            const newName = prompt("Enter new name for " + currentData.name, currentData.name);
+            if (!newName) return;
+            try {
+                await db.collection('hubs').doc(docId).update({ name: newName });
+                showToast("Hub Updated");
+            } catch (e) { showToast("Error: " + e.message); }
+        }
+
+        // Updated FetchHubs to show Actions
         function fetchHubs() {
             db.collection('hubs').onSnapshot(snap => {
                 const tbody = document.getElementById('hubsTableBody');
@@ -1303,7 +1333,12 @@
                         <td class="market-name" style="font-weight:700; color:var(--text-main);">${d.name}</td>
                         <td>${d.location || '--'}</td>
                         <td style="font-family: 'JetBrains Mono'">${d.managerEmail || '--'}</td>
-                        <td style="font-size: 0.8rem; color: var(--text-soft); font-family:'JetBrains Mono'">${doc.id.substring(0, 8)}...</td>
+                        <td>
+                            <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+                                <button onclick='editHub("${doc.id}", ${JSON.stringify(d)})' class="action-btn" style="padding:4px 8px; font-size:10px;">EDIT</button>
+                                <button onclick='deleteHub("${doc.id}")' class="action-btn" style="padding:4px 8px; font-size:10px; color:var(--error);">DEL</button>
+                            </div>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
