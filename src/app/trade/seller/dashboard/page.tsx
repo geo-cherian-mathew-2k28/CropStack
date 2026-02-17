@@ -14,7 +14,8 @@ import {
     Thermometer,
     Droplets,
     Sprout,
-    Gauge
+    Gauge,
+    Activity
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
@@ -42,6 +43,7 @@ type TransactionItem = {
 type SensorData = {
     temperature: number;
     humidity: number;
+    fan_status?: string;
     soil_moisture: number;
     light_intensity: number;
     ph_level: number;
@@ -51,6 +53,7 @@ type SensorData = {
     pressure: number;
     uv_index: number;
 };
+
 
 export default function SellerDashboard() {
     const { t } = useLanguage();
@@ -109,23 +112,25 @@ export default function SellerDashboard() {
 
             {/* Sensor Strip */}
             {sensors && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                     {[
-                        { label: 'Temperature', value: `${sensors.temperature.toFixed(1)}°C`, icon: Thermometer, color: sensors.temperature > 35 ? 'var(--error)' : 'var(--primary)' },
-                        { label: 'Humidity', value: `${sensors.humidity.toFixed(1)}%`, icon: Droplets, color: 'var(--primary)' },
+                        { label: 'Temperature', value: `${sensors.temperature.toFixed(1)}°C`, icon: Thermometer, color: sensors.temperature > 30 ? 'var(--error)' : 'var(--primary)' },
+                        { label: 'Humidity', value: `${sensors.humidity.toFixed(1)}%`, icon: Droplets, color: sensors.humidity > 70 ? 'var(--error)' : 'var(--primary)' },
+                        { label: 'Fan Control', value: sensors.fan_status || 'OFF', icon: Gauge, color: sensors.fan_status === 'ON' ? 'var(--success)' : 'var(--text-soft)' },
                         { label: 'Soil Moisture', value: `${sensors.soil_moisture.toFixed(1)}%`, icon: Sprout, color: 'var(--warning)' },
-                        { label: 'Pressure', value: `${sensors.pressure.toFixed(0)} hPa`, icon: Gauge, color: 'var(--secondary)' },
+                        { label: 'Last Sync', value: sensors.last_pulse || 'Never', icon: Activity, color: sensors.last_pulse && sensors.last_pulse !== 'Never' ? 'var(--primary)' : 'var(--text-soft)' },
                     ].map((s, i) => (
                         <div key={i} style={{ padding: '0.875rem 1rem', background: '#f8fafc', border: '1px solid var(--border-soft)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <s.icon size={18} color={s.color} />
                             <div>
                                 <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{s.label}</p>
-                                <p style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--secondary)' }}>{s.value}</p>
+                                <p style={{ fontSize: '1rem', fontWeight: 800, color: s.label === 'Fan Control' && s.value === 'ON' ? 'var(--success)' : 'var(--secondary)' }}>{s.value}</p>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
 
             {loading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
@@ -182,7 +187,7 @@ export default function SellerDashboard() {
                                     <h3 style={{ fontSize: '1.25rem' }}>Recent Payments</h3>
                                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Your latest sales and payment history</p>
                                 </div>
-                                <Link href="/seller/products" className="btn-modern btn-secondary-modern" style={{ padding: '0.5rem 1rem', height: 'auto', fontSize: '0.8rem' }}>
+                                <Link href="/trade/seller/products" className="btn-modern btn-secondary-modern" style={{ padding: '0.5rem 1rem', height: 'auto', fontSize: '0.8rem' }}>
                                     View My Crops <ChevronRight size={14} />
                                 </Link>
                             </div>

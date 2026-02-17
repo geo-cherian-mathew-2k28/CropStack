@@ -49,7 +49,7 @@ export default function OrderReceipt() {
             <div className="card-white" style={{ textAlign: 'center', padding: '5rem' }}>
                 <AlertCircle size={40} color="var(--error)" style={{ marginBottom: '1.5rem' }} />
                 <h2>Order Protocol Not Found</h2>
-                <Link href="/buyer/dashboard" className="btn-modern btn-primary-modern" style={{ marginTop: '2rem' }}>Return to Hub</Link>
+                <Link href="/trade/buyer/dashboard" className="btn-modern btn-primary-modern" style={{ marginTop: '2rem' }}>Return to Hub</Link>
             </div>
         </DashboardLayout>
     );
@@ -58,7 +58,7 @@ export default function OrderReceipt() {
 
     return (
         <DashboardLayout role="buyer">
-            <Link href="/buyer/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '2.5rem', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
+            <Link href="/trade/buyer/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '2.5rem', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
                 <ArrowLeft size={16} /> {t('back_to')} {t('dashboard')}
             </Link>
 

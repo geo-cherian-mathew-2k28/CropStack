@@ -6,31 +6,42 @@ Includes an admin dashboard to control all sensor values.
 
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 import time
-import random
 import threading
 import json
 from datetime import datetime, timedelta
+import socketio as sio_client
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # ─────────────────────────────────────────────
 #  IN-MEMORY DATA STORE
 # ─────────────────────────────────────────────
 
 sensor_data = {
-    "temperature": 28.5,
-    "humidity": 65.0,
-    "soil_moisture": 42.0,
-    "light_intensity": 780.0,
-    "ph_level": 6.8,
-    "wind_speed": 12.5,
+    "temperature": 0.0,
+    "humidity": 0.0,
+    "fan_status": "OFF",
+    "system_status": "SAFE",
+    "ventilation": "CLOSED",
+    "last_pulse": "Never",
+    "soil_moisture": 0.0,
+    "light_intensity": 0.0,
+    "ph_level": 0.0,
+    "wind_speed": 0.0,
     "rainfall": 0.0,
-    "co2_level": 410.0,
-    "pressure": 1013.25,
-    "uv_index": 5.2,
+    "co2_level": 0.0,
+    "pressure": 0.0,
+    "uv_index": 0.0,
 }
+
+# Automation Thresholds
+TEMP_THRESHOLD = 30.0
+HUMIDITY_THRESHOLD = 70.0
+
 
 sensor_history = {key: [] for key in sensor_data}
 
@@ -170,24 +181,113 @@ network_stats = {
     "market_sentiment": "Bullish",
 }
 
-# Record sensor history periodically
-def record_history():
+# Record sensor history periodically and run automation
+def sensor_loop():
     while True:
         ts = datetime.now().isoformat()
+        
+        # Automation Logic: Maintain Temp & Humidity
+        old_fan = sensor_data["fan_status"]
+        if sensor_data["temperature"] > TEMP_THRESHOLD or sensor_data["humidity"] > HUMIDITY_THRESHOLD:
+            sensor_data["fan_status"] = "ON"
+        else:
+            sensor_data["fan_status"] = "OFF"
+            
+        if old_fan != sensor_data["fan_status"]:
+            socketio.emit('sensor_update', sensor_data)
+
         for key, val in sensor_data.items():
             sensor_history[key].append({"time": ts, "value": val})
-            # Keep last 100 data points
             if len(sensor_history[key]) > 100:
                 sensor_history[key] = sensor_history[key][-100:]
         time.sleep(5)
 
-history_thread = threading.Thread(target=record_history, daemon=True)
+history_thread = threading.Thread(target=sensor_loop, daemon=True)
 history_thread.start()
+
+# ─────────────────────────────────────────────
+#  KOYEB CLOUD RELAY CLIENT
+# ─────────────────────────────────────────────
+KOYEB_URL = "https://atomic-maryjo-cropstack-2280857f.koyeb.app"
+sio = sio_client.Client()
+
+@sio.on('connect')
+def on_connect():
+    print(f"✅ Connected to Koyeb Cloud Relay: {KOYEB_URL}")
+
+@sio.on('sensor_data')
+def on_sensor_data(data):
+    print(f"📡 [CLOUD SYNC] Real-time data received: {data}")
+    updated = False
+    if "temperature" in data:
+        sensor_data["temperature"] = float(data["temperature"])
+        updated = True
+    if "humidity" in data:
+        sensor_data["humidity"] = float(data["humidity"])
+        updated = True
+    
+    if "system_status" in data:
+        sensor_data["system_status"] = data["system_status"]
+        updated = True
+    if "ventilation" in data:
+        sensor_data["ventilation"] = data["ventilation"]
+        updated = True
+    
+    if updated:
+        sensor_data["last_pulse"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        socketio.emit('sensor_update', sensor_data)
+
+def connect_to_koyeb():
+    try:
+        sio.connect(KOYEB_URL)
+        sio.wait()
+    except Exception as e:
+        print(f"❌ Cloud Relay Error: {e}")
+
+koyeb_thread = threading.Thread(target=connect_to_koyeb, daemon=True)
+koyeb_thread.start()
 
 
 # ─────────────────────────────────────────────
 #  SENSOR API ENDPOINTS
 # ─────────────────────────────────────────────
+
+@app.route('/api/sensor', methods=['POST'])
+def receive_sensor_data():
+    """Receive data from DHT11/ESP32 (Compatible with IEDC Hack code)."""
+    # Optional Security: Match the key from your IEDC Hack project
+    # backend: SENSOR_API_KEY = 'iot_secure_key_2024_v1'
+    api_key = request.headers.get('X-API-KEY')
+    # Uncomment next lines to enforce security:
+    # if api_key != 'iot_secure_key_2024_v1':
+    #     return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    
+    if "temperature" in data:
+        sensor_data["temperature"] = float(data["temperature"])
+    if "humidity" in data:
+        sensor_data["humidity"] = float(data["humidity"])
+    
+    sensor_data["last_pulse"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"📡 [HARDWARE SYNC] Data received: {data}")
+    socketio.emit('sensor_update', sensor_data)
+    
+    return jsonify({
+        "status": "success", 
+        "fan_status": sensor_data["fan_status"],
+        "sensors": sensor_data
+    }), 200
+
+@app.route('/api/esp32-config', methods=['GET'])
+def get_esp32_config():
+    """Helper to give the user the exact settings for their .ino file."""
+    return jsonify({
+        "serverName": "http://192.168.1.5:5000/api/sensor",
+        "instructions": "Copy this serverName into your esp32_iot.ino file to enable real-time sensor streaming."
+    })
 
 @app.route('/api/sensors', methods=['GET'])
 def get_sensors():
@@ -435,10 +535,22 @@ def health():
     })
 
 
+@app.route('/api/thresholds', methods=['POST'])
+def update_thresholds():
+    global TEMP_THRESHOLD, HUMIDITY_THRESHOLD
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    if "temp" in data:
+        TEMP_THRESHOLD = float(data["temp"])
+    if "humidity" in data:
+        HUMIDITY_THRESHOLD = float(data["humidity"])
+    return jsonify({"status": "success", "thresholds": {"temp": TEMP_THRESHOLD, "humidity": HUMIDITY_THRESHOLD}})
+
 if __name__ == '__main__':
     print("\n" + "="*60)
     print("  🌾 CropStack Sensor API v1.0")
     print("  📡 Dashboard: http://localhost:5000")
     print("  🔌 API Base:  http://localhost:5000/api")
     print("="*60 + "\n")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    socketio.run(app, debug=True, port=5000, host='0.0.0.0')

@@ -52,7 +52,7 @@ export default function MyProducts() {
                     <h2 style={{ fontSize: '1.875rem', color: 'var(--secondary)' }}>{t('products')}</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>View and manage all your crop listings.</p>
                 </div>
-                <Link href="/seller/products/new" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 1.5rem' }}>
+                <Link href="/trade/seller/products/new" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 1.5rem' }}>
                     <Plus size={18} /> {t('inventory')}
                 </Link>
             </div>
@@ -68,7 +68,7 @@ export default function MyProducts() {
                     </div>
                     <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No crops listed yet</h3>
                     <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Add your first crop to start selling.</p>
-                    <Link href="/seller/products/new" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 2rem' }}>
+                    <Link href="/trade/seller/products/new" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 2rem' }}>
                         Add Crop
                     </Link>
                 </div>

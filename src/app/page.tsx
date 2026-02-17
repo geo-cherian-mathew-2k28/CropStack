@@ -53,8 +53,8 @@ export default function LandingPage() {
           <Link href="#solutions" style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'none' }}>Features</Link>
           <Link href="#network" style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'none' }}>Coverage</Link>
           <div style={{ width: '1px', height: '24px', background: 'var(--border)' }}></div>
-          <Link href="/login" style={{ fontWeight: 800, color: 'var(--secondary)', fontSize: '0.9rem', textDecoration: 'none' }}>{t('cta_login')}</Link>
-          <Link href="/signup" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 1.75rem', borderRadius: '12px' }}>
+          <Link href="/trade/login" style={{ fontWeight: 800, color: 'var(--secondary)', fontSize: '0.9rem', textDecoration: 'none' }}>{t('cta_login')}</Link>
+          <Link href="/trade/signup" className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 1.75rem', borderRadius: '12px' }}>
             {t('cta_start')}
           </Link>
         </div>
@@ -214,9 +214,9 @@ export default function LandingPage() {
           <div style={{ display: 'flex', gap: '6rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <p style={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--secondary)', letterSpacing: '0.1em' }}>Platform</p>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Buy Crops</Link>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Sell Crops</Link>
-              <Link href="#" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Market Prices</Link>
+              <Link href="/trade/login" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Buy Crops</Link>
+              <Link href="/trade/login" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.925rem', fontWeight: 600 }}>Sell Crops</Link>
+              <Link href="/system/login" style={{ textDecoration: 'none', color: 'var(--primary)', fontSize: '0.925rem', fontWeight: 800 }}>System Login</Link>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <p style={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--secondary)', letterSpacing: '0.1em' }}>Support</p>

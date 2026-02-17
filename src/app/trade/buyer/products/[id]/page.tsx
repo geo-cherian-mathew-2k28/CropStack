@@ -67,7 +67,7 @@ export default function ProductDetail() {
                 created_at: new Date().toISOString(),
             });
 
-            router.push(`/buyer/orders/${orderRef.id}`);
+            router.push(`/trade/buyer/orders/${orderRef.id}`);
         } catch (err: any) {
             alert(err.message || 'Failed to place order.');
             setReserving(false);
@@ -84,14 +84,14 @@ export default function ProductDetail() {
         <DashboardLayout role="buyer">
             <div className="card-white" style={{ textAlign: 'center', padding: '5rem' }}>
                 <h2 style={{ marginBottom: '1rem' }}>Resource Node Not Found</h2>
-                <Link href="/buyer/catalog" className="btn-modern btn-primary-modern">Return to Exchange</Link>
+                <Link href="/trade/buyer/catalog" className="btn-modern btn-primary-modern">Return to Exchange</Link>
             </div>
         </DashboardLayout>
     );
 
     return (
         <DashboardLayout role="buyer">
-            <Link href="/buyer/catalog" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '2.5rem', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
+            <Link href="/trade/buyer/catalog" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '2.5rem', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
                 <ArrowLeft size={16} /> {t('back_to')} {t('catalog')}
             </Link>
 

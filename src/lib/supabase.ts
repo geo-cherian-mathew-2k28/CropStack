@@ -5,7 +5,7 @@ export type Profile = {
   id: string;
   email: string;
   full_name: string | null;
-  role: 'buyer' | 'seller' | 'organizer';
+  role: 'buyer' | 'seller' | 'manager' | 'admin';
   avatar_url: string | null;
   created_at: string;
 };

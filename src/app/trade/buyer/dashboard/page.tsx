@@ -151,7 +151,7 @@ export default function BuyerDashboard() {
                                     <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{t('recent_activity')}</h3>
                                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Your buying activity this year</p>
                                 </div>
-                                <Link href="/buyer/orders" className="btn-modern btn-secondary-modern" style={{ padding: '0.5rem 1rem', height: 'auto', fontSize: '0.8rem' }}>
+                                <Link href="/trade/buyer/orders" className="btn-modern btn-secondary-modern" style={{ padding: '0.5rem 1rem', height: 'auto', fontSize: '0.8rem' }}>
                                     {t('view_all')} <ChevronRight size={14} />
                                 </Link>
                             </div>
@@ -196,7 +196,7 @@ export default function BuyerDashboard() {
                                     </div>
                                 ))}
                             </div>
-                            <Link href="/market-intelligence" className="btn-modern btn-primary-modern" style={{ width: '100%', marginTop: '1.75rem', height: '52px' }}>
+                            <Link href="/trade/market-intelligence" className="btn-modern btn-primary-modern" style={{ width: '100%', marginTop: '1.75rem', height: '52px' }}>
                                 View All Market Prices
                             </Link>
                         </div>

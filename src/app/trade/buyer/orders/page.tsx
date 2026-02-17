@@ -104,7 +104,7 @@ export default function ActiveStock() {
                     </div>
                     <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No orders yet</h3>
                     <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Browse crops and place your first order.</p>
-                    <Link href="/buyer/catalog" className="btn-modern btn-primary-modern">Browse Crops</Link>
+                    <Link href="/trade/buyer/catalog" className="btn-modern btn-primary-modern">Browse Crops</Link>
                 </div>
             ) : (
                 <div className="card-white" style={{ overflow: 'hidden' }}>
@@ -149,7 +149,7 @@ export default function ActiveStock() {
                                         </span>
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
-                                        <Link href={`/buyer/orders/${order.id}`} className="btn-modern btn-secondary-modern" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>
+                                        <Link href={`/trade/buyer/orders/${order.id}`} className="btn-modern btn-secondary-modern" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>
                                             View Receipt <ChevronRight size={14} />
                                         </Link>
                                     </td>

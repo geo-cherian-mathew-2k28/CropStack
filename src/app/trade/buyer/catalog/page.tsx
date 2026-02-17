@@ -125,7 +125,7 @@ export default function Catalog() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
                     {filteredProducts.map((product) => (
                         <Link
-                            href={`/buyer/products/${product.id}`}
+                            href={`/trade/buyer/products/${product.id}`}
                             key={product.id}
                             style={{ textDecoration: 'none', color: 'inherit' }}
                         >

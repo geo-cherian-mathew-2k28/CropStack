@@ -55,7 +55,7 @@ export default function NewProduct() {
             });
 
             // Hard redirect to avoid race conditions
-            window.location.href = '/seller/products';
+            window.location.href = '/trade/seller/products';
             return;
         } catch (err: any) {
             console.error('Submit error:', err);
@@ -67,7 +67,7 @@ export default function NewProduct() {
 
     return (
         <DashboardLayout role="seller">
-            <Link href="/seller/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '2.5rem', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
+            <Link href="/trade/seller/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '2.5rem', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
                 <ArrowLeft size={16} /> {t('back_to')} {t('dashboard')}
             </Link>
 

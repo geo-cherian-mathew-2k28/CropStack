@@ -19,7 +19,13 @@ import Link from 'next/link';
 
 type DashboardLayoutProps = {
     children: React.ReactNode;
-    role: 'buyer' | 'seller' | 'organizer';
+    role: 'buyer' | 'seller' | 'manager' | 'admin';
+};
+
+const getPlatform = (role: string) => {
+    if (role === 'buyer' || role === 'seller') return 'trade';
+    if (role === 'manager' || role === 'admin') return 'system';
+    return 'trade';
 };
 
 export default function DashboardLayout({ children, role }: DashboardLayoutProps) {
@@ -46,13 +52,15 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
             const checkAuth = async () => {
                 try {
                     if (!user) {
-                        if (isMounted.current) await router.push('/login');
+                        const platform = getPlatform(role);
+                        if (isMounted.current) await router.push(`/${platform}/login`);
                         return;
                     }
 
                     if (profile) {
                         if (profile.role !== role) {
-                            if (isMounted.current) await router.push(`/${profile.role}/dashboard`);
+                            const targetPlatform = getPlatform(profile.role);
+                            if (isMounted.current) await router.push(`/${targetPlatform}/${profile.role}/dashboard`);
                         }
                     }
                 } catch (err: any) {

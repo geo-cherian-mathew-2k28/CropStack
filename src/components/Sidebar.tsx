@@ -23,7 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 type SidebarProps = {
-    role: 'buyer' | 'seller' | 'organizer';
+    role: 'buyer' | 'seller' | 'manager' | 'admin';
 };
 
 export default function Sidebar({ role }: SidebarProps) {
@@ -32,24 +32,40 @@ export default function Sidebar({ role }: SidebarProps) {
     const { language, setLanguage, t } = useLanguage();
 
     const buyerLinks = [
-        { name: t('dashboard'), href: '/buyer/dashboard', icon: LayoutDashboard },
-        { name: t('catalog'), href: '/buyer/catalog', icon: ShoppingBag },
-        { name: t('orders'), href: '/buyer/orders', icon: History },
+        { name: t('dashboard'), href: '/trade/buyer/dashboard', icon: LayoutDashboard },
+        { name: t('catalog'), href: '/trade/buyer/catalog', icon: ShoppingBag },
+        { name: t('orders'), href: '/trade/buyer/orders', icon: History },
     ];
 
     const sellerLinks = [
-        { name: t('dashboard'), href: '/seller/dashboard', icon: LayoutDashboard },
-        { name: t('products'), href: '/seller/products', icon: Package },
-        { name: t('inventory'), href: '/seller/products/new', icon: PlusCircle },
+        { name: t('dashboard'), href: '/trade/seller/dashboard', icon: LayoutDashboard },
+        { name: t('products'), href: '/trade/seller/products', icon: Package },
+        { name: t('inventory'), href: '/trade/seller/products/new', icon: PlusCircle },
     ];
 
-    const organizerLinks = [
-        { name: t('dashboard'), href: '/organizer/dashboard', icon: LayoutDashboard },
-        { name: t('warehouse_queue'), href: '/organizer/queue', icon: ShieldCheck },
-        { name: t('summary'), href: '/organizer/inventory', icon: Database },
+    const managerLinks = [
+        { name: t('dashboard'), href: '/system/manager/dashboard', icon: LayoutDashboard },
+        { name: t('warehouse_queue'), href: '/system/manager/queue', icon: ShieldCheck },
+        { name: t('summary'), href: '/system/manager/inventory', icon: Database },
     ];
 
-    const links = role === 'buyer' ? buyerLinks : role === 'seller' ? sellerLinks : organizerLinks;
+    const adminLinks = [
+        { name: 'Control Panel', href: '/system/admin/dashboard', icon: ShieldCheck },
+        { name: 'User Management', href: '/system/admin/users', icon: Database },
+        { name: 'System Logs', href: '/system/admin/logs', icon: Clock },
+    ];
+
+    const getLinks = () => {
+        switch (role) {
+            case 'buyer': return buyerLinks;
+            case 'seller': return sellerLinks;
+            case 'manager': return managerLinks;
+            case 'admin': return adminLinks;
+            default: return buyerLinks;
+        }
+    };
+
+    const links = getLinks();
 
     const languages = [
         { code: 'en', label: 'English' },

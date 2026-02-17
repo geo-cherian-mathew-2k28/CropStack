@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useLanguage } from '@/context/LanguageContext';
-import { Truck, ClipboardList, Search, Loader2, QrCode, ArrowRight, ShieldCheck, Warehouse, Thermometer, Droplets, Sprout, Wind } from 'lucide-react';
+import { Truck, ClipboardList, Search, Loader2, QrCode, ArrowRight, ShieldCheck, Warehouse, Thermometer, Droplets, Sprout, Wind, Activity } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -19,7 +19,7 @@ type OrderItem = {
     created_at: string;
 };
 
-type OrganizerStats = {
+type ManagerStats = {
     active_queue: number;
     gate_traffic: number;
     hub_security: number;
@@ -29,6 +29,8 @@ type OrganizerStats = {
 type SensorData = {
     temperature: number;
     humidity: number;
+    fan_status?: string;
+    last_pulse?: string;
     soil_moisture: number;
     light_intensity: number;
     ph_level: number;
@@ -39,10 +41,12 @@ type SensorData = {
     uv_index: number;
 };
 
-export default function OrganizerDashboard() {
+
+
+export default function ManagerDashboard() {
     const { t } = useLanguage();
     const [orders, setOrders] = useState<OrderItem[]>([]);
-    const [stats, setStats] = useState<OrganizerStats | null>(null);
+    const [stats, setStats] = useState<ManagerStats | null>(null);
     const [sensors, setSensors] = useState<SensorData | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -108,7 +112,7 @@ export default function OrganizerDashboard() {
     );
 
     return (
-        <DashboardLayout role="organizer">
+        <DashboardLayout role="manager">
             <div style={{ marginBottom: '2.5rem' }}>
                 <h1 style={{ fontSize: '2.25rem', fontWeight: 900, letterSpacing: '-0.05em' }}>Regional Hub <span style={{ color: 'var(--primary)' }}>Manager.</span></h1>
                 <p style={{ color: 'var(--text-muted)', fontSize: '1rem', fontWeight: 500 }}>
@@ -120,21 +124,23 @@ export default function OrganizerDashboard() {
             {sensors && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                     {[
-                        { label: 'Temperature', value: `${sensors.temperature.toFixed(1)}°C`, icon: Thermometer, color: sensors.temperature > 35 ? 'var(--error)' : 'var(--primary)' },
-                        { label: 'Humidity', value: `${sensors.humidity.toFixed(1)}%`, icon: Droplets, color: 'var(--primary)' },
-                        { label: 'Soil Moisture', value: `${sensors.soil_moisture.toFixed(1)}%`, icon: Sprout, color: 'var(--warning)' },
-                        { label: 'Wind Speed', value: `${sensors.wind_speed.toFixed(1)} km/h`, icon: Wind, color: 'var(--secondary)' },
+                        { label: 'Temperature', value: `${sensors.temperature.toFixed(1)}°C`, icon: Thermometer, color: sensors.temperature > 30 ? 'var(--error)' : 'var(--primary)' },
+                        { label: 'Humidity', value: `${sensors.humidity.toFixed(1)}%`, icon: Droplets, color: sensors.humidity > 70 ? 'var(--error)' : 'var(--primary)' },
+                        { label: 'Fan Control', value: sensors.fan_status || 'OFF', icon: Wind, color: sensors.fan_status === 'ON' ? 'var(--success)' : 'var(--text-soft)' },
+                        { label: 'Last Pulse', value: sensors.last_pulse || 'Never', icon: Activity, color: sensors.last_pulse && sensors.last_pulse !== 'Never' ? 'var(--primary)' : 'var(--text-soft)' },
                     ].map((s, i) => (
                         <div key={i} style={{ padding: '0.875rem 1rem', background: '#f8fafc', border: '1px solid var(--border-soft)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <s.icon size={18} color={s.color} />
                             <div>
                                 <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{s.label}</p>
-                                <p style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--secondary)' }}>{s.value}</p>
+                                <p style={{ fontSize: s.label === 'Last Pulse' ? '0.75rem' : '1rem', fontWeight: 800, color: s.label === 'Fan Control' && s.value === 'ON' ? 'var(--success)' : 'var(--secondary)' }}>{s.value}</p>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+
 
             {loading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
