@@ -27,21 +27,28 @@ export default function SellerDashboard() {
 
     const fetchData = useCallback(async () => {
         try {
-            const [farmerRes, sensorRes] = await Promise.all([
+            const [farmerRes, sensorRes] = await Promise.allSettled([
                 fetch(`${API_BASE}/farmer/farmer-101`),
                 fetch(`${API_BASE}/sensors`),
             ]);
 
-            if (!farmerRes.ok || !sensorRes.ok) throw new Error('API error');
-            const fData = await farmerRes.json();
-            const sData = await sensorRes.json();
+            if (farmerRes.status === 'fulfilled' && farmerRes.value.ok) {
+                const fData = await farmerRes.value.json();
+                setFarmerData(fData);
+                setAutoSell({
+                    enabled: fData.inventory.auto_sell_enabled,
+                    threshold: fData.inventory.auto_sell_threshold
+                });
+            } else {
+                console.error("Farmer API failed");
+                setError(true);
+            }
 
-            setFarmerData(fData);
-            setSensors(sData.sensors);
-            setAutoSell({
-                enabled: fData.inventory.auto_sell_enabled,
-                threshold: fData.inventory.auto_sell_threshold
-            });
+            if (sensorRes.status === 'fulfilled' && sensorRes.value.ok) {
+                const sData = await sensorRes.value.json();
+                setSensors(sData.sensors);
+            }
+
             setError(false);
         } catch (err) {
             console.error('Failed to fetch data:', err);
@@ -54,11 +61,15 @@ export default function SellerDashboard() {
     const toggleAutoSell = async () => {
         const nextState = !autoSell.enabled;
         setAutoSell(prev => ({ ...prev, enabled: nextState }));
-        await fetch(`${API_BASE}/farmer/farmer-101/auto-sell`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled: nextState, threshold: autoSell.threshold })
-        });
+        try {
+            await fetch(`${API_BASE}/farmer/farmer-101/auto-sell`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: nextState, threshold: autoSell.threshold })
+            });
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     useEffect(() => {
@@ -73,7 +84,21 @@ export default function SellerDashboard() {
         </div>
     );
 
-    if (!farmerData) return <div>Failed to load data.</div>;
+    if (!farmerData) return (
+        <DashboardLayout role="seller">
+            <div style={{ padding: '4rem', textAlign: 'center' }}>
+                <Activity size={48} color="var(--error)" style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 900 }}>Connection Offline</h2>
+                <p style={{ color: 'var(--text-soft)' }}>The CropStack node at {API_BASE} is not responding.</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    style={{ marginTop: '2rem', padding: '0.75rem 2rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                >
+                    Retry Connection
+                </button>
+            </div>
+        </DashboardLayout>
+    );
 
     const { inventory, loan_eligibility, market_price, profit_projection } = farmerData;
 

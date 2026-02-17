@@ -8,7 +8,6 @@ import {
     Database,
     Settings2,
     Power,
-    Manual,
     Activity,
     Loader2,
     Thermometer,
@@ -26,21 +25,35 @@ export default function ManagerDashboard() {
     const [sensors, setSensors] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [manualMode, setManualMode] = useState(false);
+    const [error, setError] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
-            const [adminRes, sensorRes] = await Promise.all([
+            const [adminRes, sensorRes] = await Promise.allSettled([
                 fetch(`${API_BASE}/admin/data`),
                 fetch(`${API_BASE}/sensors`),
             ]);
-            const aData = await adminRes.json();
-            const sData = await sensorRes.json();
 
-            setAdminData(aData);
-            setSensors(sData.sensors);
-            setManualMode(sData.sensors.manual_mode);
+            if (adminRes.status === 'fulfilled' && adminRes.value.ok) {
+                const aData = await adminRes.value.json();
+                setAdminData(aData);
+            }
+
+            if (sensorRes.status === 'fulfilled' && sensorRes.value.ok) {
+                const sData = await sensorRes.value.json();
+                setSensors(sData.sensors);
+                setManualMode(sData.sensors.manual_mode);
+            }
+
+            if (adminRes.status === 'rejected' || (adminRes.status === 'fulfilled' && !adminRes.value.ok)) {
+                setError(true);
+            } else {
+                setError(false);
+            }
+
         } catch (err) {
             console.error(err);
+            setError(true);
         } finally {
             setLoading(false);
         }
@@ -49,11 +62,15 @@ export default function ManagerDashboard() {
     const toggleMode = async () => {
         const nextMode = !manualMode;
         setManualMode(nextMode);
-        await fetch(`${API_BASE}/control`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ manual_mode: nextMode })
-        });
+        try {
+            await fetch(`${API_BASE}/control`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manual_mode: nextMode })
+            });
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     useEffect(() => {
@@ -63,6 +80,15 @@ export default function ManagerDashboard() {
     }, [fetchData]);
 
     if (loading) return <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 className="animate-spin" /></div>;
+
+    if (error && !adminData) return (
+        <DashboardLayout role="manager">
+            <div style={{ padding: '4rem', textAlign: 'center' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 900 }}>Connection Lost</h2>
+                <p>Unable to reach management API at {API_BASE}</p>
+            </div>
+        </DashboardLayout>
+    );
 
     return (
         <DashboardLayout role="manager">
@@ -99,7 +125,7 @@ export default function ManagerDashboard() {
                         <Thermometer size={24} color="var(--primary)" />
                         <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-soft)' }}>TEMP</span>
                     </div>
-                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900 }}>{sensors?.temperature.toFixed(1)}°C</h2>
+                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900 }}>{sensors?.temperature?.toFixed(1) || '--'}°C</h2>
                     <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>OPTIMAL RANGE</p>
                 </div>
 
@@ -108,7 +134,7 @@ export default function ManagerDashboard() {
                         <Droplets size={24} color="var(--primary)" />
                         <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-soft)' }}>HUMIDITY</span>
                     </div>
-                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900 }}>{sensors?.humidity.toFixed(1)}%</h2>
+                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900 }}>{sensors?.humidity?.toFixed(1) || '--'}%</h2>
                     <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>WELL VENTILATED</p>
                 </div>
 
@@ -117,7 +143,7 @@ export default function ManagerDashboard() {
                         <Wind size={24} color={sensors?.fan_status === 'ON' ? 'var(--primary)' : 'var(--text-soft)'} />
                         <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-soft)' }}>COOLING</span>
                     </div>
-                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900 }}>{sensors?.fan_status}</h2>
+                    <h2 style={{ fontSize: '2.25rem', fontWeight: 900 }}>{sensors?.fan_status || '--'}</h2>
                     <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-soft)' }}>DEVICE 01</p>
                 </div>
 
@@ -152,7 +178,7 @@ export default function ManagerDashboard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {adminData?.farmers.map((farmer: any, idx: number) => (
+                            {adminData?.farmers?.map((farmer: any, idx: number) => (
                                 <tr key={idx} style={{ borderBottom: '1px solid var(--border-soft)' }}>
                                     <td style={{ padding: '1.5rem 0' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
