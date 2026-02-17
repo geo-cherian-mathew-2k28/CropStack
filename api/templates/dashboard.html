@@ -11,6 +11,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             --bg: #0a0e17;
@@ -793,9 +798,9 @@
             <!-- Tabs -->
             <div class="tabs">
                 <button class="tab active" data-tab="sensors">🔬 Sensors</button>
-                <button class="tab" data-tab="market">📊 Market Data</button>
-                <button class="tab" data-tab="dashboards">📈 Dashboard Stats</button>
-                <button class="tab" data-tab="orders">📦 Orders & Txns</button>
+                <button class="tab" data-tab="dashboards">📊 Analytics</button>
+                <button class="tab" data-tab="orders">📦 Orders</button>
+                <button class="tab" data-tab="hubs">🏭 Hubs</button>
             </div>
 
             <!-- SENSORS TAB -->
@@ -1182,6 +1187,64 @@
                     </div>
                 </div>
             </div>
+
+            <!-- HUBS TAB -->
+            <div class="tab-content" id="tab-hubs">
+                <div class="section-title">
+                    <h2>Hub Management</h2>
+                    <span class="badge badge-live"
+                        style="background:rgba(139,92,246,0.15);color:#8b5cf6;border-color:rgba(139,92,246,0.3)">FIREBASE
+                        DATABASE</span>
+                </div>
+
+                <div id="firebase-auth-container" class="card" style="text-align:center; padding: 4rem;">
+                    <div style="margin-bottom: 2rem;">
+                        <i data-lucide="shield" style="width: 48px; height: 48px; color: #8b5cf6;"></i>
+                    </div>
+                    <h3 style="margin-bottom: 1rem;">Admin Authentication</h3>
+                    <p style="margin-bottom: 2rem; color: var(--text-muted);">Secure login required to access Firestore
+                        Database.</p>
+                    <input type="text" id="fb-email" placeholder="admin@cropstack.com" class="sensor-input"
+                        style="max-width: 300px; margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto;">
+                    <input type="password" id="fb-pass" placeholder="Password" class="sensor-input"
+                        style="max-width: 300px; margin-bottom: 2rem; display: block; margin-left: auto; margin-right: auto;">
+                    <button onclick="loginFirebase()" class="action-btn primary" style="width: 200px;">Verify
+                        Identity</button>
+                    <p id="fb-error" style="color: var(--error); margin-top: 1rem; font-size: 0.9rem;"></p>
+                </div>
+
+                <div id="hub-manager-view" style="display: none;">
+                    <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 1.5rem;">Register New Hub & Manager</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                            <input id="new-hub-name" placeholder="Hub Name (e.g. North Zone)" class="sensor-input">
+                            <input id="new-hub-location" placeholder="Location Name" class="sensor-input">
+                            <input id="new-hub-email" placeholder="Manager Email" class="sensor-input">
+                            <input id="new-hub-pass" type="password" placeholder="Manager Password"
+                                class="sensor-input">
+                        </div>
+                        <button onclick="registerHub()" class="action-btn primary" style="width: 100%;">Create Hub &
+                            Manager Account</button>
+                    </div>
+
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+                            <h3>Active Hubs</h3>
+                        </div>
+                        <table class="market-table">
+                            <thead>
+                                <tr>
+                                    <th>Hub Name</th>
+                                    <th>Location</th>
+                                    <th>Admin Email</th>
+                                    <th>ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hubsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1192,6 +1255,115 @@
     </div>
 
     <script>
+        // ── Firebase Integration ──
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuErXMmZvRByhm5xyb02kMWkBAwaDC-Jg",
+            authDomain: "opstack-79d62.firebaseapp.com",
+            projectId: "opstack-79d62",
+            storageBucket: "opstack-79d62.firebasestorage.app",
+            messagingSenderId: "1077905031956",
+            appId: "1:1077905031956:web:4e2ea21fad9844f74a3801"
+        };
+        // Initialize if not already initialized
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Admin Login
+        async function loginFirebase() {
+            const email = document.getElementById('fb-email').value;
+            const pass = document.getElementById('fb-pass').value;
+            const errEl = document.getElementById('fb-error');
+            if (errEl) errEl.textContent = '';
+
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+                showToast('Admin Authenticated');
+                document.getElementById('firebase-auth-container').style.display = 'none';
+                document.getElementById('hub-manager-view').style.display = 'block';
+                fetchHubs();
+            } catch (e) {
+                if (errEl) errEl.textContent = e.message;
+                showToast('Login Failed');
+            }
+        }
+
+        // Fetch Hubs
+        function fetchHubs() {
+            db.collection('hubs').onSnapshot(snap => {
+                const tbody = document.getElementById('hubsTableBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="market-name" style="font-weight:700; color:var(--text-main);">${d.name}</td>
+                        <td>${d.location || '--'}</td>
+                        <td style="font-family: 'JetBrains Mono'">${d.managerEmail || '--'}</td>
+                        <td style="font-size: 0.8rem; color: var(--text-soft); font-family:'JetBrains Mono'">${doc.id.substring(0, 8)}...</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        // Register Hub
+        async function registerHub() {
+            const name = document.getElementById('new-hub-name').value;
+            const loc = document.getElementById('new-hub-location').value;
+            const email = document.getElementById('new-hub-email').value;
+            const pass = document.getElementById('new-hub-pass').value;
+
+            if (!name || !email || !pass) {
+                showToast('Please fill all fields');
+                return;
+            }
+
+            // Secondary App Logic to create user without logging out admin
+            let secondaryApp;
+            try {
+                showToast('Creating Manager Account...');
+                secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
+                const cred = await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
+                const uid = cred.user.uid;
+
+                // Create Profile (Manager Role)
+                await db.collection('profiles').doc(uid).set({
+                    role: 'manager',
+                    email: email,
+                    hubName: name,
+                    createdAt: new Date().toISOString()
+                });
+
+                // Create Hub
+                await db.collection('hubs').add({
+                    name: name,
+                    location: loc,
+                    managerId: uid,
+                    managerEmail: email,
+                    createdAt: new Date().toISOString(),
+                    status: 'active'
+                });
+
+                showToast(`Hub "${name}" registered!`);
+
+                // Clear inputs
+                document.getElementById('new-hub-name').value = '';
+                document.getElementById('new-hub-location').value = '';
+                document.getElementById('new-hub-email').value = '';
+                document.getElementById('new-hub-pass').value = '';
+
+                secondaryApp.delete();
+
+            } catch (e) {
+                showToast('Error: ' + e.message);
+                if (secondaryApp) secondaryApp.delete();
+            }
+        }
+
         const API = '';
         let sensorData = {
             temperature: '--',
