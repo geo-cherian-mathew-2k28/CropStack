@@ -957,6 +957,26 @@
                         border-color: var(--primary);
                     }
 
+                    .pin-badge {
+                        white-space: nowrap;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0.35rem 0.6rem;
+                        background: rgba(16, 185, 129, 0.15);
+                        color: var(--primary);
+                        border: 1px solid rgba(16, 185, 129, 0.3);
+                        border-radius: 6px;
+                        font-weight: 700;
+                        font-size: 0.7rem;
+                        font-family: 'JetBrains Mono', monospace;
+                        min-width: 80px;
+                    }
+
+                    .stat-row {
+                        padding: 0.85rem 0;
+                    }
+
                     .control-btn .icon-box {
                         width: 48px;
                         height: 48px;
@@ -1385,12 +1405,12 @@
 
             // Network stats
             const nsCard = document.getElementById('networkStatsCard');
-            nsCard.innerHTML = `< h3 style = "font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;" > Network Stats</h3 > `;
+            nsCard.innerHTML = `<h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1.5rem;">Network Stats</h3>`;
             for (const [key, val] of Object.entries(networkStats)) {
                 const row = document.createElement('div');
                 row.className = 'stat-row';
                 row.innerHTML = `
-            < span class="stat-key" > ${key.replace(/_/g, ' ')}</span >
+            <span class="stat-key">${key.replace(/_/g, ' ')}</span>
                 <input class="stat-input" style="width: 100px;" value="${val}" onchange="networkStats['${key}']= isNaN(parseFloat(this.value)) ? this.value : parseFloat(this.value)">
                     `;
                 nsCard.appendChild(row);
