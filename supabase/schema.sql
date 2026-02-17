@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
-    role TEXT CHECK (role IN ('buyer', 'seller', 'organizer')),
+    role TEXT CHECK (role IN ('buyer', 'seller', 'manager', 'admin')),
     avatar_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()

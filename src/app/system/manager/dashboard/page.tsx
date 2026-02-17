@@ -96,8 +96,8 @@ export default function ManagerDashboard() {
             if (!res.ok) throw new Error('Failed to complete order');
             await fetchData();
         } catch (err) {
-            console.error('Finalization protocol error:', err);
-            alert('Failed to complete order. Please try again.');
+            console.error('Error confirming pickup:', err);
+            alert('Failed to complete. Please try again.');
         } finally {
             setConfirming(null);
         }
@@ -114,9 +114,9 @@ export default function ManagerDashboard() {
     return (
         <DashboardLayout role="manager">
             <div style={{ marginBottom: '2.5rem' }}>
-                <h1 style={{ fontSize: '2.25rem', fontWeight: 900, letterSpacing: '-0.05em' }}>Regional Hub <span style={{ color: 'var(--primary)' }}>Manager.</span></h1>
+                <h1 style={{ fontSize: '2.25rem', fontWeight: 900, letterSpacing: '-0.05em' }}>Warehouse <span style={{ color: 'var(--primary)' }}>Manager.</span></h1>
                 <p style={{ color: 'var(--text-muted)', fontSize: '1rem', fontWeight: 500 }}>
-                    {error ? '⚠️ Sensor API offline — showing cached data' : 'Operational visibility for storage node cluster.'}
+                    {error ? '⚠️ System offline — showing last saved info' : 'Check your storage health and manage deliveries.'}
                 </p>
             </div>
 
@@ -124,23 +124,21 @@ export default function ManagerDashboard() {
             {sensors && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                     {[
-                        { label: 'Temperature', value: `${sensors.temperature.toFixed(1)}°C`, icon: Thermometer, color: sensors.temperature > 30 ? 'var(--error)' : 'var(--primary)' },
-                        { label: 'Humidity', value: `${sensors.humidity.toFixed(1)}%`, icon: Droplets, color: sensors.humidity > 70 ? 'var(--error)' : 'var(--primary)' },
-                        { label: 'Fan Control', value: sensors.fan_status || 'OFF', icon: Wind, color: sensors.fan_status === 'ON' ? 'var(--success)' : 'var(--text-soft)' },
-                        { label: 'Last Pulse', value: sensors.last_pulse || 'Never', icon: Activity, color: sensors.last_pulse && sensors.last_pulse !== 'Never' ? 'var(--primary)' : 'var(--text-soft)' },
+                        { label: 'Air Temperature', value: `${sensors.temperature.toFixed(1)}°C`, icon: Thermometer, color: sensors.temperature > 30 ? 'var(--error)' : 'var(--primary)' },
+                        { label: 'Air Humidity', value: `${sensors.humidity.toFixed(1)}%`, icon: Droplets, color: sensors.humidity > 70 ? 'var(--error)' : 'var(--primary)' },
+                        { label: 'Cooling Fan', value: sensors.fan_status || 'OFF', icon: Wind, color: sensors.fan_status === 'ON' ? 'var(--success)' : 'var(--text-soft)' },
+                        { label: 'Hardware Sync', value: sensors.last_pulse || 'Never', icon: Activity, color: sensors.last_pulse && sensors.last_pulse !== 'Never' ? 'var(--primary)' : 'var(--text-soft)' },
                     ].map((s, i) => (
                         <div key={i} style={{ padding: '0.875rem 1rem', background: '#f8fafc', border: '1px solid var(--border-soft)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <s.icon size={18} color={s.color} />
                             <div>
                                 <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-soft)', textTransform: 'uppercase' }}>{s.label}</p>
-                                <p style={{ fontSize: s.label === 'Last Pulse' ? '0.75rem' : '1rem', fontWeight: 800, color: s.label === 'Fan Control' && s.value === 'ON' ? 'var(--success)' : 'var(--secondary)' }}>{s.value}</p>
+                                <p style={{ fontSize: s.label === 'Hardware Sync' ? '0.75rem' : '1rem', fontWeight: 800, color: s.label === 'Cooling Fan' && s.value === 'ON' ? 'var(--success)' : 'var(--secondary)' }}>{s.value}</p>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
-
-
 
             {loading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
@@ -151,50 +149,50 @@ export default function ManagerDashboard() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
                         <div className="card-white" style={{ padding: '2rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '1px' }}>Active Queue</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '1px' }}>Deliveries Today</span>
                                 <div style={{ width: '40px', height: '40px', background: 'var(--primary-soft)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <ClipboardList size={20} color="var(--primary)" />
                                 </div>
                             </div>
                             <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>{stats?.active_queue || filteredOrders.length}</h2>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', fontWeight: 600 }}>Lots pending clearance</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', fontWeight: 600 }}>Items waiting to be picked up</p>
                         </div>
 
                         <div className="card-white" style={{ padding: '2rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '1px' }}>Gate Traffic</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '1px' }}>Warehouse Traffic</span>
                                 <div style={{ width: '40px', height: '40px', background: 'var(--success-soft)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Truck size={20} color="var(--success)" />
                                 </div>
                             </div>
                             <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>{stats?.gate_traffic || 0}</h2>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', fontWeight: 600 }}>Scheduled dispatch</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', fontWeight: 600 }}>Trucks arriving soon</p>
                         </div>
 
                         <div className="card-white" style={{ padding: '2rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '1px' }}>Hub Security</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '1px' }}>Storage Health</span>
                                 <ShieldCheck size={24} color="var(--primary)" />
                             </div>
-                            <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>{stats?.hub_security || 0}%</h2>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', fontWeight: 600 }}>Node Health Index</p>
+                            <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>{stats?.hub_security || 100}%</h2>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-soft)', fontWeight: 600 }}>Warehouse safety score</p>
                         </div>
 
                         <div className="card-white glass-dark" style={{ padding: '2rem', color: 'white' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px' }}>Flow Volume</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px' }}>Money Handled</span>
                                 <Warehouse size={20} color="var(--primary)" />
                             </div>
                             <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>{t('currency_symbol')}{(stats?.flow_volume || 0).toLocaleString()}</h2>
-                            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Settlement velocity</p>
+                            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Payment speed and volume</p>
                         </div>
                     </div>
 
                     <div className="card-white" style={{ padding: '2.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
                             <div>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Clearance Terminal</h3>
-                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Scan and verify Pickup PINs for outbound release.</p>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Item Delivery</h3>
+                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Enter a pickup code to release items to a buyer.</p>
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -203,14 +201,14 @@ export default function ManagerDashboard() {
                                     <input
                                         type="text"
                                         className="input-modern"
-                                        placeholder="Filter by PIN or Buyer..."
+                                        placeholder="Search for code or name..."
                                         style={{ paddingLeft: '2.75rem', height: '48px', fontSize: '0.9rem' }}
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
                                 </div>
                                 <button className="btn-modern btn-primary-modern" style={{ height: '48px', padding: '0 1.5rem' }}>
-                                    <QrCode size={18} /> Launch Scanner
+                                    <QrCode size={18} /> Open Camera
                                 </button>
                             </div>
                         </div>
@@ -218,19 +216,19 @@ export default function ManagerDashboard() {
                         {filteredOrders.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '6rem', background: 'var(--bg-main)', borderRadius: '24px', border: '1px dashed var(--border)' }}>
                                 <Warehouse size={48} color="#94a3b8" style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
-                                <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--secondary)' }}>Hub Synchronized</h4>
-                                <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', fontWeight: 500, marginTop: '0.5rem' }}>No active pre-order lots currently scheduled for release.</p>
+                                <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--secondary)' }}>All Set!</h4>
+                                <p style={{ color: 'var(--text-soft)', fontSize: '0.95rem', fontWeight: 500, marginTop: '0.5rem' }}>No items are waiting to be picked up right now.</p>
                             </div>
                         ) : (
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.75rem' }}>
                                     <thead>
                                         <tr style={{ color: 'var(--text-soft)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800 }}>Validation PIN</th>
-                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800 }}>Counterparty</th>
-                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800 }}>Storage Lot</th>
-                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800 }}>Audit Val</th>
-                                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 800 }}>Protocol</th>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800 }}>Pickup Code</th>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800 }}>Buyer Name</th>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800 }}>Item Details</th>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 800 }}>Price</th>
+                                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 800 }}>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -242,12 +240,12 @@ export default function ManagerDashboard() {
                                                     </span>
                                                 </td>
                                                 <td style={{ padding: '1.5rem 1rem' }}>
-                                                    <p style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--secondary)' }}>{order.buyer_name || 'Anonymous Node'}</p>
-                                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-soft)', fontWeight: 800, textTransform: 'uppercase' }}>Verified Network ID</p>
+                                                    <p style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--secondary)' }}>{order.buyer_name || 'Anonymous Buyer'}</p>
+                                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-soft)', fontWeight: 800, textTransform: 'uppercase' }}>Verified Customer</p>
                                                 </td>
                                                 <td style={{ padding: '1.5rem 1rem' }}>
                                                     <p style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--secondary)' }}>{order.product_name}</p>
-                                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>{order.quantity} {t('unit_q')} (Slot {order.product_id.slice(0, 4).toUpperCase()})</p>
+                                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>{order.quantity} {t('unit_q')}</p>
                                                 </td>
                                                 <td style={{ padding: '1.5rem 1rem' }}>
                                                     <span style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--secondary)' }}>{t('currency_symbol')}{order.total_price.toFixed(2)}</span>
@@ -259,7 +257,7 @@ export default function ManagerDashboard() {
                                                         style={{ height: '42px', padding: '0 1.25rem', borderRadius: '12px' }}
                                                         disabled={!!confirming}
                                                     >
-                                                        {confirming === order.id ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <>Verify Release <ArrowRight size={16} /></>}
+                                                        {confirming === order.id ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <>Confirm Delivery <ArrowRight size={16} /></>}
                                                     </button>
                                                 </td>
                                             </tr>
