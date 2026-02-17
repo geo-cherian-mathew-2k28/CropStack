@@ -287,16 +287,28 @@ def update_control():
 @app.route('/api/sensor', methods=['POST'])
 @app.route('/sensor', methods=['POST'])  # Support legacy code
 def receive_sensor_data():
-    
-    sensor_data["last_pulse"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"📡 [HARDWARE SYNC] Data received: {data}")
-    socketio.emit('sensor_update', sensor_data)
-    
-    return jsonify({
-        "status": "success", 
-        "fan_status": sensor_data["fan_status"],
-        "sensors": sensor_data
-    }), 200
+    """Receive data from ESP32 and reply with COMMANDS."""
+    global sensor_data
+    try:
+        data = request.json
+        if data:
+            sensor_data.update(data)
+            print(f"📡 [HARDWARE SYNC] Data: {data}")
+        
+        sensor_data["last_pulse"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Broadcast to Dashboard
+        socketio.emit('sensor_update', sensor_data)
+        
+        # Reply to ESP32 with Control State (Buttons)
+        return jsonify({
+            "status": "success", 
+            "commands": control_state
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in receive_sensor_data: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/esp32-config', methods=['GET'])
 def get_esp32_config():
